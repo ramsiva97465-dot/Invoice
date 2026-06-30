@@ -417,6 +417,8 @@ export const dbService = {
       gst_percentage: gstPct > 0 ? gstPct : null,
       gst_amount,
       total_amount,
+      // Calculate next recharge date (29 days after invoice_date)
+      next_recharge_date: new Date(new Date(invoiceData.invoice_date).getTime() + 29 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       created_at: new Date().toISOString(),
       user_id: userId,
     };
@@ -448,6 +450,21 @@ export const dbService = {
 
     if (itemsError) throw itemsError;
 
+    // Trigger edge function for newly created invoice (all statuses)
+    console.log('🛎️ Triggering edge function for invoice_created', { invoiceId: newInv.id });
+    try {
+      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify_telegram_reminders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ event: 'invoice_created', invoice_id: newInv.id }),
+      });
+    } catch (e) {
+      console.error('Failed to trigger invoice creation Telegram notification', e);
+    }
+
     return this.getInvoiceDetails(newInv.id) as unknown as Invoice;
   },
 
@@ -459,12 +476,46 @@ export const dbService = {
     const { error: sessionError } = await client.auth.getSession();
     if (sessionError) throw sessionError;
 
-    const { error } = await client
-      .from('invoices')
-      .update({ payment_status })
-      .eq('id', id);
+    // Fetch current invoice to check previous status
+    const currentInvoice = await this.getInvoiceDetails(id);
+    const previousStatus = currentInvoice?.payment_status;
+
+    // Prepare updates
+    const updates: Record<string, unknown> = { payment_status };
+    if (payment_status === 'Paid') {
+      const today = new Date();
+      updates.next_recharge_date = new Date(today.getTime() + 29 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    }
+
+    const { error } = await client.from('invoices').update(updates).eq('id', id);
     if (error) throw error;
-    return this.getInvoiceDetails(id) as unknown as Invoice;
+
+    const updatedInvoice = await this.getInvoiceDetails(id) as unknown as Invoice;
+
+    // Send Telegram notification if status changed to Paid
+    if (payment_status === 'Paid' && previousStatus !== 'Paid') {
+      console.log('🛎️ Triggering edge function for payment_received', { invoiceId: id });
+      console.log('Sending POST to edge function for payment_received');
+      // Invoke edge function for immediate notification
+      try {
+        const paidResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify_telegram_reminders`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({ event: 'payment_received', invoice_id: id }),
+        });
+        console.log('✅ Edge function payment_received response status', paidResp?.status);
+        const respText = await paidResp.text();
+        console.log('Edge function response body:', respText);
+      } catch (e) {
+        console.error('❌ Edge function payment_received call failed', e);
+      }
+
+    }
+
+    return updatedInvoice;
   },
 
 
