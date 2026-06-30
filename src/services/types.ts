@@ -13,6 +13,7 @@ export interface CompanySettings {
   upi_id: string;
   logo_url: string;
   signature_url?: string;
+  gst_percentage?: number | null; // Added to match fallback and schema
 }
 
 export interface Customer {
@@ -74,3 +75,7 @@ export interface Reminder {
   customer_mobile: string;
 }
 
+export interface TelegramSettings {
+  bot_token: string;
+  chat_id: string;
+}

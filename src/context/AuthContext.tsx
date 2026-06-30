@@ -31,7 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const supabase = dbService.getSupabaseClient();
     if (!supabase) {
-      console.error('Supabase client unavailable');
+      
       queueMicrotask(() => setLoading(false));
       return;
     }
@@ -79,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     if (!isSupabaseConfigured) {
-      console.warn('Logout called without Supabase configuration – no action taken');
+
       setUser(null);
       return;
     }

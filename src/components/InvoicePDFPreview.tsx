@@ -72,7 +72,7 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
 
       pdf.save(`${invoice.invoice_number}.pdf`);
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('PDF download error:', error);
     } finally {
       setDownloading(false);
     }
@@ -240,8 +240,18 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
                   <div>
                     <p className="text-[10px] uppercase tracking-[0.15em] text-slate-400 font-bold mb-2">Payment Details</p>
                     <p className="text-sm font-bold text-slate-800">{companySettings.bank_name}</p>
-                    <p className="text-xs text-slate-600 mt-0.5"><span className="font-medium text-slate-500">A/C:</span> {companySettings.account_number}</p>
-                    <p className="text-xs text-slate-600 mt-0.5"><span className="font-medium text-slate-500">IFSC:</span> {companySettings.ifsc_code}</p>
+                    {companySettings.company_name && (
+                      <p className="text-xs text-slate-600 mt-0.5"><span className="font-medium text-slate-500">Account Holder:</span> {companySettings.company_name}</p>
+                    )}
+                    {companySettings.account_number && (
+                      <p className="text-xs text-slate-600 mt-0.5"><span className="font-medium text-slate-500">A/C:</span> {companySettings.account_number}</p>
+                    )}
+                    {companySettings.ifsc_code && (
+                      <p className="text-xs text-slate-600 mt-0.5"><span className="font-medium text-slate-500">IFSC:</span> {companySettings.ifsc_code}</p>
+                    )}
+                    {companySettings.upi_id && (
+                      <p className="text-xs text-slate-600 mt-0.5"><span className="font-medium text-slate-500">UPI ID:</span> {companySettings.upi_id}</p>
+                    )}
                   </div>
                 </div>
 
@@ -260,6 +270,7 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
               
               <div className="mt-10 text-center border-t border-slate-200 pt-6">
                 <p className="text-[10px] text-slate-500 tracking-wider">Thank you for your business. Please retain this invoice for your records.</p>
+                <p className="text-[10px] text-slate-500 tracking-wider">Powered by XIVORA</p>
               </div>
             </div>
           </div>

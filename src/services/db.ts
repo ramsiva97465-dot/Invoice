@@ -1,15 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 import type { SupabaseClient } from '@supabase/supabase-js';
-// Production: keep only default fallback values (no mock datasets).
-import { SAMPLE_COMPANY_SETTINGS, SAMPLE_CUSTOMERS, SAMPLE_INVOICES, SAMPLE_INVOICE_ITEMS } from './sampleData';
 
-// Helper to simulate async delay for demo mode
-const demoDelay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 import type {
   CompanySettings,
   Customer,
   Invoice,
   InvoiceItem,
+  TelegramSettings,
 } from './types';
 
 
@@ -65,37 +63,73 @@ export const dbService = {
     return supabase;
   },
 
-  // --- Company Settings API (user-scoped) ---
-  async getCompanySettings(): Promise<CompanySettings> {
-    if (!isSupabaseConfigured) {
-      // Demo mode – return static settings
-      await demoDelay(200);
-      return SAMPLE_COMPANY_SETTINGS;
+  async getTelegramSettings(): Promise<TelegramSettings> {
+    const client = this.ensureSupabase();
+    const { data, error } = await client
+      .from('telegram_settings')
+      .select('*')
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) {
+      return { bot_token: '', chat_id: '' };
     }
+    return data as TelegramSettings;
+  },
+
+  async updateTelegramSettings(settings: TelegramSettings): Promise<TelegramSettings> {
     const client = this.ensureSupabase();
 
+    // Get current user for RLS
+    const { data: sessionData, error: sessionError } = await client.auth.getSession();
+    if (sessionError) throw sessionError;
+    const userId = sessionData?.session?.user?.id;
+
+    const { data: existing, error: existingError } = await client
+      .from('telegram_settings')
+      .select('id')
+      .maybeSingle();
+    if (existingError) throw existingError;
+
+    const payload: Record<string, unknown> = {
+      ...settings,
+      user_id: userId,
+    };
+    if (existing?.id) payload.id = existing.id;
+
+    const { data, error } = await client
+      .from('telegram_settings')
+      .upsert([payload])
+      .select('*')
+      .single();
+    if (error) throw error;
+    return data as TelegramSettings;
+  },
+  async getCompanySettings(): Promise<CompanySettings> {
+    const client = this.ensureSupabase();
     const { data, error } = await client
       .from('company_settings')
       .select('*')
       .maybeSingle();
-
-
     if (error) throw error;
-
     if (!data) {
-      return SAMPLE_COMPANY_SETTINGS;
+      return {
+        company_name: '',
+        mobile_number: '',
+        address: '',
+        email: '',
+        gst_number: '',
+        bank_name: '',
+        account_number: '',
+        ifsc_code: '',
+        upi_id: '',
+        logo_url: '',
+        gst_percentage: 18,
+      } as CompanySettings;
     }
-
     return data as CompanySettings;
   },
 
   async updateCompanySettings(settings: CompanySettings): Promise<CompanySettings> {
-    if (!isSupabaseConfigured) {
-      await demoDelay(200);
-      // Update in-memory sample settings
-      Object.assign(SAMPLE_COMPANY_SETTINGS, settings);
-      return { ...SAMPLE_COMPANY_SETTINGS };
-    }
     const client = this.ensureSupabase();
 
     const { data: existing, error: existingError } = await client
@@ -130,22 +164,6 @@ export const dbService = {
 
   // --- Customers API ---
   async getCustomers(query: string = '', status: string = 'All'): Promise<Customer[]> {
-    if (!isSupabaseConfigured) {
-      await demoDelay(200);
-      let result = SAMPLE_CUSTOMERS;
-      if (status !== 'All') {
-        result = result.filter(c => c.status === status);
-      }
-      if (query) {
-        const q = query.toLowerCase();
-        result = result.filter(c =>
-          c.name.toLowerCase().includes(q) ||
-          c.mobile_number.includes(q) ||
-          c.customer_id.toLowerCase().includes(q)
-        );
-      }
-      return result;
-    }
     const client = this.ensureSupabase();
 
     let q = client.from('customers').select('*');
@@ -169,20 +187,6 @@ export const dbService = {
 
 
   async addCustomer(customer: Omit<Customer, 'id' | 'customer_id' | 'created_at'>): Promise<Customer> {
-    if (!isSupabaseConfigured) {
-      await demoDelay(200);
-      const nextNum = SAMPLE_CUSTOMERS.length + 101;
-      const customer_id = `SCN-${new Date().getFullYear()}-${nextNum}`;
-      const newCust: Customer = {
-        ...customer,
-        id: `cust-${nextNum}`,
-        customer_id,
-        created_at: new Date().toISOString(),
-        status: customer.status ?? 'Active'
-      };
-      SAMPLE_CUSTOMERS.push(newCust);
-      return newCust;
-    }
     const client = this.ensureSupabase();
 
     // Verify session (auth guard)
@@ -224,14 +228,6 @@ export const dbService = {
 
 
   async updateCustomer(id: string, updates: Partial<Customer>): Promise<Customer> {
-    if (!isSupabaseConfigured) {
-      await demoDelay(200);
-      const idx = SAMPLE_CUSTOMERS.findIndex(c => c.id === id);
-      if (idx === -1) throw new Error('Customer not found');
-      const updated = { ...SAMPLE_CUSTOMERS[idx], ...updates };
-      SAMPLE_CUSTOMERS[idx] = updated as Customer;
-      return updated as Customer;
-    }
     const client = this.ensureSupabase();
 
     // Auth guard
@@ -256,12 +252,6 @@ export const dbService = {
 
 
   async deleteCustomer(id: string): Promise<void> {
-    if (!isSupabaseConfigured) {
-      await demoDelay(100);
-      const idx = SAMPLE_CUSTOMERS.findIndex(c => c.id === id);
-      if (idx !== -1) SAMPLE_CUSTOMERS.splice(idx, 1);
-      return;
-    }
     const client = this.ensureSupabase();
 
     // Auth guard – no user_id on customers table (single-company)
@@ -280,21 +270,6 @@ export const dbService = {
 
   // --- Invoices API ---
   async getInvoices(query: string = '', status: string = 'All'): Promise<Invoice[]> {
-    if (!isSupabaseConfigured) {
-      await demoDelay(200);
-      let result = SAMPLE_INVOICES;
-      if (status !== 'All') {
-        result = result.filter(i => i.payment_status === status);
-      }
-      if (query) {
-        const q = query.toLowerCase();
-        result = result.filter(i =>
-          i.invoice_number.toLowerCase().includes(q) ||
-          (i.customer_id && SAMPLE_CUSTOMERS.find(c => c.id === i.customer_id && c.name.toLowerCase().includes(q)))
-        );
-      }
-      return result;
-    }
     const client = this.ensureSupabase();
 
     let q = client
@@ -333,20 +308,6 @@ export const dbService = {
 
 
   async getInvoiceDetails(id: string): Promise<Invoice | null> {
-    if (!isSupabaseConfigured) {
-      await demoDelay(100);
-      const inv = SAMPLE_INVOICES.find(i => i.id === id);
-      if (!inv) return null;
-      const customer = SAMPLE_CUSTOMERS.find(c => c.id === inv.customer_id);
-      return {
-        ...inv,
-        customer_name: customer?.name,
-        customer_mobile: customer?.mobile_number,
-        customer_address: customer?.address,
-        customer_plan: customer?.plan_name,
-        items: SAMPLE_INVOICE_ITEMS[id] || [],
-      };
-    }
     const client = this.ensureSupabase();
 
 
@@ -408,28 +369,6 @@ export const dbService = {
     },
     items: Omit<InvoiceItem, 'id' | 'invoice_id'>[]
   ): Promise<Invoice> {
-    if (!isSupabaseConfigured) {
-      await demoDelay(200);
-      const nextId = `inv-${SAMPLE_INVOICES.length + 1}`;
-      const subtotal = items.reduce((acc, i) => acc + i.rate * i.quantity, 0);
-      const gstPct = typeof invoiceData.gst_percentage === 'number' ? invoiceData.gst_percentage : 0;
-      const gst_amount = Number((subtotal * (gstPct / 100)).toFixed(2));
-      const total_amount = Number((subtotal + gst_amount).toFixed(2));
-      const invoice_number = `INV-${new Date().getFullYear()}${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(SAMPLE_INVOICES.length + 1).padStart(3, '0')}`;
-      const newInv: Invoice = {
-        id: nextId,
-        invoice_number,
-        ...invoiceData,
-        subtotal,
-        gst_percentage: gstPct > 0 ? gstPct : null,
-        gst_amount,
-        total_amount,
-        created_at: new Date().toISOString()
-      };
-      SAMPLE_INVOICES.push(newInv);
-      SAMPLE_INVOICE_ITEMS[newInv.id] = items.map(it => ({ ...it, amount: Number((it.rate * it.quantity).toFixed(2)) }));
-      return newInv;
-    }
 
     const subtotal = items.reduce((acc, item) => acc + (item.rate * item.quantity), 0);
 
@@ -439,7 +378,7 @@ export const dbService = {
     const total_amount = Number((subtotal + gst_amount).toFixed(2));
 
     const client = this.ensureSupabase();
-    
+                                                
     const { data: sessionData, error: sessionError } = await client.auth.getSession();
     if (sessionError) throw sessionError;
     const userId = sessionData?.session?.user?.id;
@@ -482,7 +421,7 @@ export const dbService = {
       user_id: userId,
     };
 
-    console.log('Inserting invoice with payload:', payload, 'Session userId:', userId);
+    
 
     const { data: newInv, error: invError } = await client
       .from('invoices')
@@ -514,12 +453,6 @@ export const dbService = {
 
 
   async updateInvoiceStatus(id: string, payment_status: 'Paid' | 'Pending'): Promise<Invoice> {
-    if (!isSupabaseConfigured) {
-      await demoDelay(100);
-      const idx = SAMPLE_INVOICES.findIndex(i => i.id === id);
-      if (idx !== -1) SAMPLE_INVOICES[idx].payment_status = payment_status;
-      return this.getInvoiceDetails(id) as unknown as Invoice;
-    }
     const client = this.ensureSupabase();
 
     // Auth guard

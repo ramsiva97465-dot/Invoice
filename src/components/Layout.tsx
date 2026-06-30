@@ -7,14 +7,13 @@ import {
   LayoutDashboard, 
   Users, 
   FileText, 
-  BarChart3, 
+  Wifi, 
   Settings as SettingsIcon, 
   LogOut, 
   Sun, 
   Moon, 
   Menu, 
-  X, 
-  Wifi 
+  X 
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -39,7 +38,7 @@ export const Layout: React.FC<LayoutProps> = ({
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'customers', label: 'Customers', icon: Users },
     { id: 'invoices', label: 'Invoices', icon: FileText },
-    { id: 'reports', label: 'Reports', icon: BarChart3 },
+    { id: 'telegram', label: 'Telegram', icon: Wifi },
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
 

@@ -32,9 +32,9 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   const [paymentStatus, setPaymentStatus] = useState<'Paid' | 'Pending'>('Pending');
   const [notes, setNotes] = useState('Please pay on or before the due date to avoid network speed reduction or suspension.');
   const [items, setItems] = useState<Omit<InvoiceItem, 'id' | 'invoice_id'>[]>([]);
-  const [gstMode, setGstMode] = useState<'Without' | 'With'>('With');
+  const [gstMode, setGstMode] = useState<'Without' | 'With'>('Without');
   const [gstPercentage, setGstPercentage] = useState<number>(18);
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -47,7 +47,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
         setPaymentStatus('Pending');
         setNotes('Please pay on or before the due date to avoid network speed reduction or suspension.');
         setItems([]);
-        setGstMode('With');
+        setGstMode('Without');
         setGstPercentage(18);
         setError('');
       });
@@ -167,19 +167,10 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
         items
       );
       onClose();
-    } catch (err: unknown) {
-      // Supabase errors are PostgREST objects {message, code, details, hint}, not Error instances
-      let errMsg = 'Failed to generate invoice.';
-      if (err instanceof Error) {
-        errMsg = err.message;
-      } else if (err && typeof err === 'object') {
-        const e = err as Record<string, unknown>;
-        errMsg = String(e.message || e.details || e.hint || JSON.stringify(err));
-      } else {
-        errMsg = String(err);
-      }
-      setError(errMsg);
-    } finally {
+
+      setLoading(false);
+    } catch {
+      setError('Failed to save invoice. Please try again.');
       setLoading(false);
     }
   };
@@ -188,7 +179,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-      <div 
+      <div
         className="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden border border-slate-100 dark:border-slate-700 max-h-[90vh] flex flex-col my-8"
         onClick={(e) => e.stopPropagation()}
       >
@@ -196,7 +187,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           <h3 className="text-base font-bold text-slate-900 dark:text-white">
             Create Bill / New Invoice
           </h3>
-          <button 
+          <button
             onClick={onClose}
             className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-600 dark:hover:text-white transition-colors"
           >
@@ -377,7 +368,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                   </>
                 )}
               </div>
-              <div className="h-px bg-slate-200 dark:bg-slate-700 w-full my-1"></div>
+              <p className="text-[10px] text-slate-500 tracking-wider">Powered by XIVORA</p>
               <div className="flex justify-between w-full text-sm font-bold text-slate-900 dark:text-white font-sans">
                 <span>Total Amount:</span>
                 <span className="text-emerald-500">₹{calculateTotal().toFixed(2)}</span>

@@ -8,6 +8,8 @@ import { Customers } from './pages/Customers';
 import { Invoices } from './pages/Invoices';
 import { Reports } from './pages/Reports';
 import { Settings } from './pages/Settings';
+import { TelegramSettingsPage } from './pages/TelegramSettings';
+import type { TelegramSettings } from './services/types';
 
 import { CustomerModal } from './components/CustomerModal';
 import { InvoiceModal } from './components/InvoiceModal';
@@ -19,7 +21,7 @@ import type { Customer, CompanySettings, InvoiceItem } from './services/types';
 const AppContent: React.FC = () => {
   const { user, loading } = useAuth();
   const { showToast } = useToast();
-  
+
   // Navigation / UI States
   const [activeTab, setActiveTab] = useState('dashboard');
   const [darkMode, setDarkMode] = useState(() => {
@@ -28,6 +30,7 @@ const AppContent: React.FC = () => {
 
   // Settings state
   const [companySettings, setCompanySettings] = useState<CompanySettings>(SAMPLE_COMPANY_SETTINGS);
+  const [telegramSettings, setTelegramSettings] = useState<TelegramSettings | null>(null);
 
   // Sync update notifications between screens
   const [customersUpdated, setCustomersUpdated] = useState(false);
@@ -55,6 +58,19 @@ const AppContent: React.FC = () => {
     loadSettings();
   }, [user]);
 
+  // Fetch Telegram settings ONLY after auth succeeds
+  useEffect(() => {
+    const loadTelegram = async () => {
+      if (!user) return;
+      try {
+        const tg = await dbService.getTelegramSettings();
+        setTelegramSettings(tg);
+      } catch {
+        // ignore errors silently
+      }
+    };
+    loadTelegram();
+  }, [user]);
 
   // Sync dark mode style class with root document
   useEffect(() => {
@@ -130,6 +146,12 @@ const AppContent: React.FC = () => {
     }
   };
 
+  // Save Telegram settings
+  const saveTelegramSettings = async (settings: TelegramSettings): Promise<void> => {
+    const updated = await dbService.updateTelegramSettings(settings);
+    setTelegramSettings(updated);
+  };
+
   // Render Spin indicator during loading check
   if (loading) {
     return (
@@ -197,7 +219,17 @@ const AppContent: React.FC = () => {
         <Settings companySettings={companySettings} setCompanySettings={setCompanySettings} />
       )}
 
-
+      {activeTab === 'telegram' && (
+        telegramSettings ? (
+          <TelegramSettingsPage
+            telegramSettings={telegramSettings}
+            setTelegramSettings={setTelegramSettings}
+            onSave={saveTelegramSettings}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-sm text-slate-500">Loading Telegram settings...</div>
+        )
+      )}
 
       {/* Customer Modals */}
 

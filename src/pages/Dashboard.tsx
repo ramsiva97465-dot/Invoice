@@ -70,8 +70,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       
       const allInvoices = await dbService.getInvoices();
       setRecentInvoices(allInvoices.slice(0, 5)); // Keep only top 5 recent
-    } catch (error) {
-      console.error('Error fetching dashboard metrics:', error);
+    } catch {
       showToast('Error', 'Failed to retrieve billing records.', 'error');
     } finally {
       setLoading(false);

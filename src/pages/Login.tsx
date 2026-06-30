@@ -65,8 +65,8 @@ export const Login: React.FC = () => {
           <div className="p-3 bg-emerald-500 text-white rounded-2xl shadow-xl shadow-emerald-500/20 mb-3">
             <Wifi className="h-8 w-8 animate-pulse" />
           </div>
-          <h2 className="text-2xl font-extrabold text-white tracking-tight">SHAKTHI CABLE NETWORK</h2>
-          <p className="text-sm text-slate-400 mt-1">Cable Billing & Invoice Management Portal</p>
+          <h2 className="text-2xl font-extrabold text-white tracking-tight">Xivora Invoice Studio</h2>
+          <p className="text-sm text-slate-400 mt-1">Xivora Invoice Studio</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
