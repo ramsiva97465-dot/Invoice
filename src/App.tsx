@@ -157,7 +157,7 @@ const AppContent: React.FC = () => {
     return (
       <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center gap-3">
         <div className="w-12 h-12 border-4 border-slate-700 border-t-emerald-500 rounded-full animate-spin"></div>
-        <p className="text-sm font-bold text-slate-400 font-sans tracking-wide">Starting SHAKTHI CABLE NETWORK billing space...</p>
+        <p className="text-sm font-bold text-slate-400 font-sans tracking-wide">Starting your billing space...</p>
       </div>
     );
   }
