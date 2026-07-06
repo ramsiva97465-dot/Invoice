@@ -193,19 +193,34 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
       const pdfBlob = pdf.output('blob');
       const pdfFile = new File([pdfBlob], `${invoice.invoice_number}.pdf`, { type: 'application/pdf' });
 
-      if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+      // Fetch the QR code image to bundle it with the PDF
+      const qrResponse = await fetch(qrCodeUrl);
+      const qrBlob = await qrResponse.blob();
+      const qrFile = new File([qrBlob], `Pay_QR_${invoice.invoice_number}.png`, { type: 'image/png' });
+
+      const filesToShare = [pdfFile, qrFile];
+
+      if (navigator.canShare && navigator.canShare({ files: filesToShare })) {
         await navigator.share({
-          files: [pdfFile],
+          files: filesToShare,
           title: `Invoice ${invoice.invoice_number}`,
-          text: `Dear Customer, please find attached your invoice ${invoice.invoice_number} from ${companySettings.company_name}.`,
+          text: `Dear Customer, please find attached your invoice PDF and payment QR Code from ${companySettings.company_name}.`,
         });
       } else {
         pdf.save(`${invoice.invoice_number}.pdf`);
-        alert("Direct PDF sharing is not supported by your browser/device. The PDF has been downloaded to your device instead. You can now manually attach and send it on WhatsApp.");
+        
+        const imgUrl = URL.createObjectURL(qrBlob);
+        const link = document.createElement('a');
+        link.href = imgUrl;
+        link.download = `Pay_QR_${invoice.invoice_number}.png`;
+        link.click();
+        URL.revokeObjectURL(imgUrl);
+
+        alert("Direct file sharing is not supported by your browser/device. Both the invoice PDF and payment QR Code image have been downloaded to your device instead. You can now manually send them on WhatsApp.");
       }
     } catch (error) {
-      console.error('PDF sharing error:', error);
-      alert('Failed to share PDF.');
+      console.error('Sharing error:', error);
+      alert('Failed to generate or share files.');
     } finally {
       setDownloading(false);
     }
