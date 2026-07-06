@@ -93,15 +93,6 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
     if (!invoiceRef.current) return;
     setDownloading(true);
 
-    // Auto-copy customer's phone number to clipboard for easy searching in WhatsApp contact list
-    if (invoice.customer_mobile) {
-      try {
-        await navigator.clipboard.writeText(invoice.customer_mobile);
-      } catch (err) {
-        console.error('Failed to copy customer mobile number:', err);
-      }
-    }
-
     try {
       const element = invoiceRef.current;
       const originalWidth = element.style.width;
@@ -139,24 +130,37 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
         heightLeft -= pageHeight;
       }
 
-      const pdfBlob = pdf.output('blob');
-      const pdfFile = new File([pdfBlob], `Invoice_${invoice.invoice_number}.pdf`, { type: 'application/pdf' });
+      // Download the PDF invoice automatically to the device
+      pdf.save(`Invoice_${invoice.invoice_number}.pdf`);
 
-      const filesToShare = [pdfFile];
-      let qrBlob: Blob | null = null;
       const isPaid = invoice.payment_status === 'Paid';
 
+      // Also download QR code if unpaid
       if (!isPaid) {
-        // Fetch the QR code image to bundle it with the PDF for unpaid invoices
-        const qrResponse = await fetch(qrCodeUrl);
-        qrBlob = await qrResponse.blob();
-        const qrFile = new File([qrBlob], `QR_${invoice.invoice_number}.png`, { type: 'image/png' });
-        filesToShare.push(qrFile);
+        try {
+          const qrResponse = await fetch(qrCodeUrl);
+          const qrBlob = await qrResponse.blob();
+          const imgUrl = URL.createObjectURL(qrBlob);
+          const link = document.createElement('a');
+          link.href = imgUrl;
+          link.download = `QR_${invoice.invoice_number}.png`;
+          link.click();
+          URL.revokeObjectURL(imgUrl);
+        } catch (err) {
+          console.error('Failed to download QR code:', err);
+        }
       }
 
+      // Clean mobile number
+      const formattedPhone = invoice.customer_mobile ? invoice.customer_mobile.replace(/\D/g, '') : '';
+      const finalPhone = (formattedPhone.length === 10) ? '91' + formattedPhone : formattedPhone;
+
+      // Format clean message with direct payment link (if unpaid)
       const formattedDueDate = invoice.due_date 
         ? new Date(invoice.due_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
         : new Date(invoice.invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+      const upiDirectPayUrl = `upi://pay?pa=${companySettings.upi_id}&pn=${encodeURIComponent(companySettings.company_name)}&am=${invoice.total_amount}&tn=${invoice.invoice_number}`;
 
       let message = `Hello *${invoice.customer_name}* 👋\n\n` +
         `Your invoice for *${companySettings.company_name}* is ready.\n\n` +
@@ -164,39 +168,21 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
         `💰 Amount: *₹${invoice.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n` +
         `📅 Due Date: *${formattedDueDate}*\n` +
         `📌 Status: *${invoice.payment_status}*\n\n` +
-        `📄 Your invoice PDF is attached.\n\n`;
+        `📄 Your invoice PDF has been downloaded to your device.\n\n`;
 
       if (!isPaid) {
-        message += `📷 Scan the attached QR Code to make your payment instantly using any UPI app.\n\n`;
+        message += `🔗 Tap here to pay directly using any UPI app:\n${upiDirectPayUrl}\n\n`;
       }
 
       message += `Thank you for choosing *${companySettings.company_name}*.\n\n` +
         `_Powered by Xivora_`;
 
-      if (navigator.canShare && navigator.canShare({ files: filesToShare })) {
-        await navigator.share({
-          files: filesToShare,
-          title: `Invoice ${invoice.invoice_number}`,
-          text: message,
-        });
-      } else {
-        pdf.save(`Invoice_${invoice.invoice_number}.pdf`);
-        
-        if (qrBlob) {
-          const imgUrl = URL.createObjectURL(qrBlob);
-          const link = document.createElement('a');
-          link.href = imgUrl;
-          link.download = `QR_${invoice.invoice_number}.png`;
-          link.click();
-          URL.revokeObjectURL(imgUrl);
-          alert("Direct file sharing is not supported by your browser/device. Both the invoice PDF and payment QR Code image have been downloaded to your device instead. You can now manually send them on WhatsApp.");
-        } else {
-          alert("Direct file sharing is not supported by your browser/device. The invoice PDF has been downloaded to your device instead. You can now manually send it on WhatsApp.");
-        }
-      }
+      // Open WhatsApp chat directly
+      const url = `https://api.whatsapp.com/send?phone=${finalPhone}&text=${encodeURIComponent(message)}`;
+      window.open(url, '_blank');
     } catch (error) {
-      console.error('Sharing error:', error);
-      alert('Failed to generate or share files.');
+      console.error('WhatsApp direct redirect error:', error);
+      alert('Failed to launch WhatsApp direct chat.');
     } finally {
       setDownloading(false);
     }
