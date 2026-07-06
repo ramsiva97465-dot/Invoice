@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { TenantProvider, useTenant } from './context/TenantContext';
 import { ToastProvider, useToast } from './components/Toast';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
@@ -19,8 +20,11 @@ import type { Customer, CompanySettings, InvoiceItem } from './services/types';
 
 // Main Application shell that handles state, tab navigation, theme modes
 const AppContent: React.FC = () => {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { loading: tenantLoading } = useTenant();
   const { showToast } = useToast();
+
+  const loading = authLoading || (!!user && tenantLoading);
 
   // Navigation / UI States
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -257,9 +261,11 @@ const AppContent: React.FC = () => {
 function App() {
   return (
     <AuthProvider>
-      <ToastProvider>
-        <AppContent />
-      </ToastProvider>
+      <TenantProvider>
+        <ToastProvider>
+          <AppContent />
+        </ToastProvider>
+      </TenantProvider>
     </AuthProvider>
   );
 }

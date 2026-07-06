@@ -1,73 +1,52 @@
-# React + TypeScript + Vite
+# Invoice Studio Monorepo
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Welcome to the Invoice Studio repository, structured for production-grade multi-tenant SaaS development.
 
-Currently, two official plugins are available:
+## Project Structure
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+This project follows a clean, decoupled directory structure separating the frontend application, the backend database resources, shared items, and documentation:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+/
+├── frontend/                     # React + TypeScript + Vite SPA client
+│   ├── src/                      # Source code (pages, components, context)
+│   ├── public/                   # Static public assets
+│   ├── test/                     # Frontend test files
+│   └── vite.config.ts            # Vite bundle configurations
+│
+├── backend/                      # Supabase Database configurations
+│   ├── migrations/               # Sequential migration SQL files
+│   ├── supabase/                 # Edge functions, powershell tests, local setups
+│   └── schema.sql                # Original unified schema sql
+│
+├── shared/                       # Workspace shared code (types, shared functions)
+│
+├── docs/                         # Project architecture & development manuals
+│   ├── Architecture.md           # Application design patterns & layout flow
+│   ├── Database.md               # Multi-tenant scoping & constraints schemas
+│   ├── SaaS-Roadmap.md           # Deployment roadmap sequence
+│   └── Deployment.md             # Vercel & Supabase release manual
+│
+├── package.json                  # Root Monorepo workspaces manager
+├── .gitignore                    # Global git ignore criteria
+└── README.md                     # This documentation
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Running Commands
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+All developer commands can be run directly from the repository **root folder**. The root `package.json` will automatically delegate execution to the `frontend/` directory context:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 1. Install Dependencies
+```bash
+npm install --prefix frontend
+```
+
+### 2. Run Development Server
+```bash
+npm run dev
+```
+
+### 3. Build for Production
+```bash
+npm run build
 ```
