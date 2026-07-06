@@ -191,28 +191,43 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
       }
 
       const pdfBlob = pdf.output('blob');
-      const pdfFile = new File([pdfBlob], `${invoice.invoice_number}.pdf`, { type: 'application/pdf' });
+      const pdfFile = new File([pdfBlob], `Invoice_${invoice.invoice_number}.pdf`, { type: 'application/pdf' });
 
       // Fetch the QR code image to bundle it with the PDF
       const qrResponse = await fetch(qrCodeUrl);
       const qrBlob = await qrResponse.blob();
-      const qrFile = new File([qrBlob], `Pay_QR_${invoice.invoice_number}.png`, { type: 'image/png' });
+      const qrFile = new File([qrBlob], `QR_${invoice.invoice_number}.png`, { type: 'image/png' });
 
       const filesToShare = [pdfFile, qrFile];
+
+      const formattedDueDate = invoice.due_date 
+        ? new Date(invoice.due_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+        : new Date(invoice.invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+
+      const message = `Hello *${invoice.customer_name}* 👋\n\n` +
+        `Your invoice for *${companySettings.company_name}* is ready.\n\n` +
+        `🧾 Invoice No: *${invoice.invoice_number}*\n` +
+        `💰 Amount: *₹${invoice.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n` +
+        `📅 Due Date: *${formattedDueDate}*\n` +
+        `📌 Status: *${invoice.payment_status}*\n\n` +
+        `📄 Your invoice PDF is attached.\n\n` +
+        `📷 Scan the attached QR Code to make your payment instantly using any UPI app.\n\n` +
+        `Thank you for choosing *${companySettings.company_name}*.\n\n` +
+        `_Powered by Xivora_`;
 
       if (navigator.canShare && navigator.canShare({ files: filesToShare })) {
         await navigator.share({
           files: filesToShare,
           title: `Invoice ${invoice.invoice_number}`,
-          text: `Dear Customer, please find attached your invoice PDF and payment QR Code from ${companySettings.company_name}.`,
+          text: message,
         });
       } else {
-        pdf.save(`${invoice.invoice_number}.pdf`);
+        pdf.save(`Invoice_${invoice.invoice_number}.pdf`);
         
         const imgUrl = URL.createObjectURL(qrBlob);
         const link = document.createElement('a');
         link.href = imgUrl;
-        link.download = `Pay_QR_${invoice.invoice_number}.png`;
+        link.download = `QR_${invoice.invoice_number}.png`;
         link.click();
         URL.revokeObjectURL(imgUrl);
 
@@ -228,14 +243,20 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
 
   const handleWhatsAppTextAlert = () => {
     const formattedPhone = formatPhoneForWhatsApp(invoice.customer_mobile || '');
-    
-    // Create a standard UPI payment URL for phone payment app integration
-    const upiDirectPayUrl = `upi://pay?pa=${companySettings.upi_id}&pn=${encodeURIComponent(companySettings.company_name)}&am=${invoice.total_amount}&tn=${invoice.invoice_number}`;
-    
-    // Create a public URL link to display the QR code image
-    const publicQrCodeLink = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiDirectPayUrl)}`;
+    const formattedDueDate = invoice.due_date 
+      ? new Date(invoice.due_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+      : new Date(invoice.invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
-    const message = `Hello ${invoice.customer_name},\n\nYour invoice *${invoice.invoice_number}* from *${companySettings.company_name}* is ready.\n\n*Amount Due*: ₹${invoice.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n*Status*: ${invoice.payment_status}\n\n*UPI ID*: ${companySettings.upi_id}\n\n*Tap here to pay directly*:\n${upiDirectPayUrl}\n\n*Or view QR Code to Scan*:\n${publicQrCodeLink}\n\nThank you!\n- Powered by Xivora`;
+    const message = `Hello *${invoice.customer_name}* 👋\n\n` +
+      `Your invoice for *${companySettings.company_name}* is ready.\n\n` +
+      `🧾 Invoice No: *${invoice.invoice_number}*\n` +
+      `💰 Amount: *₹${invoice.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}*\n` +
+      `📅 Due Date: *${formattedDueDate}*\n` +
+      `📌 Status: *${invoice.payment_status}*\n\n` +
+      `📄 Your invoice PDF is attached.\n\n` +
+      `📷 Scan the attached QR Code to make your payment instantly using any UPI app.\n\n` +
+      `Thank you for choosing *${companySettings.company_name}*.\n\n` +
+      `_Powered by Xivora_`;
     
     const url = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
