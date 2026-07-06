@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import type { Invoice, CompanySettings } from '../services/types';
-import { Download, Printer, X, Award } from 'lucide-react';
+import { Download, Printer, X, Award, Palette, MessageSquare } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -11,6 +11,69 @@ interface InvoicePDFPreviewProps {
   companySettings: CompanySettings;
 }
 
+interface Theme {
+  name: string;
+  dotColor: string;
+  primaryText: string;
+  accentGradient: string;
+  qrColor: string;
+  accentBar: string;
+}
+
+const THEMES: Record<string, Theme> = {
+  teal: {
+    name: 'Teal Classic',
+    dotColor: '#0d9488',
+    primaryText: 'text-teal-700',
+    accentGradient: 'from-teal-500 to-emerald-600',
+    qrColor: '0D9488',
+    accentBar: 'bg-gradient-to-r from-teal-500 to-emerald-600'
+  },
+  blue: {
+    name: 'Royal Blue',
+    dotColor: '#2563eb',
+    primaryText: 'text-blue-700',
+    accentGradient: 'from-blue-600 to-indigo-700',
+    qrColor: '2563EB',
+    accentBar: 'bg-gradient-to-r from-blue-600 to-indigo-700'
+  },
+  rose: {
+    name: 'Sunset Rose',
+    dotColor: '#e11d48',
+    primaryText: 'text-rose-700',
+    accentGradient: 'from-pink-500 to-rose-600',
+    qrColor: 'E11D48',
+    accentBar: 'bg-gradient-to-r from-pink-500 to-rose-600'
+  },
+  gold: {
+    name: 'Golden Hour',
+    dotColor: '#d97706',
+    primaryText: 'text-amber-700',
+    accentGradient: 'from-amber-500 to-orange-600',
+    qrColor: 'D97706',
+    accentBar: 'bg-gradient-to-r from-amber-500 to-orange-600'
+  },
+  charcoal: {
+    name: 'Charcoal Minimal',
+    dotColor: '#334155',
+    primaryText: 'text-slate-800',
+    accentGradient: 'from-slate-700 to-slate-900',
+    qrColor: '334155',
+    accentBar: 'bg-gradient-to-r from-slate-700 to-slate-900'
+  }
+};
+
+const formatPhoneForWhatsApp = (phone: string) => {
+  let cleaned = phone.replace(/\D/g, '');
+  if (cleaned.length === 10) {
+    cleaned = '91' + cleaned;
+  }
+  if (cleaned.length === 11 && cleaned.startsWith('0')) {
+    cleaned = '91' + cleaned.substring(1);
+  }
+  return cleaned;
+};
+
 export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
   isOpen,
   onClose,
@@ -18,21 +81,20 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
   companySettings,
 }) => {
   const [downloading, setDownloading] = useState(false);
+  const [themeKey, setThemeKey] = useState<string>('teal');
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   if (!isOpen || !invoice) return null;
 
-  // Hardcoded invoice look (stable print/PDF). QR image is still generated from real UPI.
+  const activeTheme = THEMES[themeKey] || THEMES.teal;
+
   const upiUrl = `upi://pay?pa=${encodeURIComponent(companySettings.upi_id)}&pn=${encodeURIComponent(
     companySettings.company_name
   )}&am=${invoice.total_amount}&tn=${encodeURIComponent(invoice.invoice_number)}`;
 
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
     upiUrl
-  )}&color=10B981&bgcolor=FFFFFF`;
-
-  // Invoice issuer is driven by company settings (logged-in user).
-
+  )}&color=${activeTheme.qrColor}&bgcolor=FFFFFF`;
 
   const handlePrint = () => {
     window.print();
@@ -44,12 +106,9 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
 
     try {
       const element = invoiceRef.current;
-      
-      // Save original styles to restore them later
       const originalWidth = element.style.width;
       const originalMinWidth = element.style.minWidth;
       
-      // Force desktop size for html2canvas
       element.style.width = '800px';
       element.style.minWidth = '800px';
 
@@ -60,13 +119,11 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
         windowWidth: 800,
       });
 
-      // Restore original styles
       element.style.width = originalWidth;
       element.style.minWidth = originalMinWidth;
 
       const imgData = canvas.toDataURL('image/png');
 
-      // Page size A4: 210mm x 297mm
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgWidth = 210;
       const pageHeight = 295;
@@ -98,12 +155,9 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
 
     try {
       const element = invoiceRef.current;
-      
-      // Save original styles to restore them later
       const originalWidth = element.style.width;
       const originalMinWidth = element.style.minWidth;
       
-      // Force desktop size for html2canvas
       element.style.width = '800px';
       element.style.minWidth = '800px';
 
@@ -114,13 +168,11 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
         windowWidth: 800,
       });
 
-      // Restore original styles
       element.style.width = originalWidth;
       element.style.minWidth = originalMinWidth;
 
       const imgData = canvas.toDataURL('image/png');
 
-      // Page size A4: 210mm x 297mm
       const pdf = new jsPDF('p', 'mm', 'a4');
       const imgWidth = 210;
       const pageHeight = 295;
@@ -148,7 +200,6 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
           text: `Dear Customer, please find attached your invoice ${invoice.invoice_number} from ${companySettings.company_name}.`,
         });
       } else {
-        // Fallback: download the file and alert the user
         pdf.save(`${invoice.invoice_number}.pdf`);
         alert("Direct PDF sharing is not supported by your browser/device. The PDF has been downloaded to your device instead. You can now manually attach and send it on WhatsApp.");
       }
@@ -160,10 +211,18 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
     }
   };
 
+  const handleWhatsAppTextAlert = () => {
+    const formattedPhone = formatPhoneForWhatsApp(invoice.customer_mobile || '');
+    const message = `Hello ${invoice.customer_name},\n\nYour invoice *${invoice.invoice_number}* from *${companySettings.company_name}* is ready.\n\n*Amount Due*: ₹${invoice.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n*Status*: ${invoice.payment_status}\n\nYou can pay using UPI ID: ${companySettings.upi_id}\n\nThank you!\n- Powered by Xivora`;
+    
+    const url = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
       <div
-        className="w-full max-w-4xl bg-slate-100 dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col max-h-[95vh]"
+        className="w-full max-w-5xl bg-slate-100 dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col max-h-[95vh]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-6 py-4 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 no-print">
@@ -172,6 +231,26 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
             <h3 className="text-sm font-bold text-slate-800 dark:text-white">Invoice Preview</h3>
           </div>
           <div className="flex items-center gap-2">
+            {/* Color Palette Selector */}
+            <div className="flex items-center gap-1.5 border-r border-slate-200 dark:border-slate-700 pr-4 mr-2">
+              <Palette className="h-3.5 w-3.5 text-slate-400" />
+              <div className="flex items-center gap-1.5">
+                {Object.keys(THEMES).map((key) => (
+                  <button
+                    key={key}
+                    onClick={() => setThemeKey(key)}
+                    className={`w-3.5 h-3.5 rounded-full border transition-all ${
+                      themeKey === key 
+                        ? 'ring-2 ring-offset-2 ring-teal-550 ring-emerald-500 scale-110' 
+                        : 'border-transparent hover:scale-110'
+                    }`}
+                    style={{ backgroundColor: THEMES[key].dotColor }}
+                    title={THEMES[key].name}
+                  />
+                ))}
+              </div>
+            </div>
+
             <button
               onClick={handlePrint}
               className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-650 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-600 transition-colors"
@@ -179,6 +258,16 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
               <Printer className="h-3.5 w-3.5" />
               <span>Print</span>
             </button>
+
+            <button
+              onClick={handleWhatsAppTextAlert}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-650 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-600 transition-colors"
+              title="Send WhatsApp Text Alert"
+            >
+              <MessageSquare className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>WhatsApp Alert</span>
+            </button>
+
             <button
               onClick={handleDownloadPDF}
               disabled={downloading}
@@ -213,7 +302,7 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
             style={{ colorScheme: 'light' }}
           >
             {/* Top Accent Bar */}
-            <div className="h-2 w-full bg-gradient-to-r from-teal-500 to-emerald-600 absolute top-0 left-0 right-0"></div>
+            <div className={`h-2 w-full ${activeTheme.accentBar} absolute top-0 left-0 right-0`}></div>
             
             <div className="px-12 pt-14 pb-10 flex flex-col flex-1">
               {/* Header Section */}
@@ -223,7 +312,7 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
                   <p className="text-sm font-medium text-slate-500 tracking-wider">#{invoice.invoice_number}</p>
                 </div>
                 <div className="text-right">
-                  <h2 className="text-2xl font-extrabold text-teal-700 tracking-tight">{companySettings.company_name}</h2>
+                  <h2 className={`text-2xl font-extrabold ${activeTheme.primaryText} tracking-tight`}>{companySettings.company_name}</h2>
                   <p className="mt-1.5 text-xs text-slate-500 leading-relaxed max-w-[250px] ml-auto">{companySettings.address}</p>
                   <div className="mt-2 text-xs text-slate-600 space-y-0.5">
                     {companySettings.mobile_number && <p>{companySettings.mobile_number}</p>}
@@ -395,5 +484,3 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
     </div>
   );
 };
-
-
