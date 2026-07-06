@@ -44,11 +44,25 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
 
     try {
       const element = invoiceRef.current;
+      
+      // Save original styles to restore them later
+      const originalWidth = element.style.width;
+      const originalMinWidth = element.style.minWidth;
+      
+      // Force desktop size for html2canvas
+      element.style.width = '800px';
+      element.style.minWidth = '800px';
+
       const canvas = await html2canvas(element, {
         scale: 2,
         useCORS: true,
         logging: false,
+        windowWidth: 800,
       });
+
+      // Restore original styles
+      element.style.width = originalWidth;
+      element.style.minWidth = originalMinWidth;
 
       const imgData = canvas.toDataURL('image/png');
 
