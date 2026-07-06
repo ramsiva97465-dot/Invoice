@@ -93,6 +93,15 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
     if (!invoiceRef.current) return;
     setDownloading(true);
 
+    // Auto-copy customer's phone number to clipboard for easy searching in WhatsApp contact list
+    if (invoice.customer_mobile) {
+      try {
+        await navigator.clipboard.writeText(invoice.customer_mobile);
+      } catch (err) {
+        console.error('Failed to copy customer mobile number:', err);
+      }
+    }
+
     try {
       const element = invoiceRef.current;
       const originalWidth = element.style.width;
