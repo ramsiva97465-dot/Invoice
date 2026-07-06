@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import type { Invoice, CompanySettings } from '../services/types';
-import { Download, Printer, X, Award, Palette, MessageSquare } from 'lucide-react';
+import { Download, Printer, X, Award, Palette, MessageSquare, QrCode } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -226,6 +226,37 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
     window.open(url, '_blank');
   };
 
+  const handleShareQRCodeImage = async () => {
+    if (!invoice) return;
+    setDownloading(true);
+    try {
+      const response = await fetch(qrCodeUrl);
+      const blob = await response.blob();
+      const qrFile = new File([blob], `SCN_QR_${invoice.invoice_number}.png`, { type: 'image/png' });
+
+      if (navigator.canShare && navigator.canShare({ files: [qrFile] })) {
+        await navigator.share({
+          files: [qrFile],
+          title: `UPI QR Code for Invoice ${invoice.invoice_number}`,
+          text: `Scan to pay ₹${invoice.total_amount} for invoice ${invoice.invoice_number}.`,
+        });
+      } else {
+        const imgUrl = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = imgUrl;
+        link.download = `SCN_QR_${invoice.invoice_number}.png`;
+        link.click();
+        URL.revokeObjectURL(imgUrl);
+        alert("Direct image sharing is not supported by your browser. The QR Code image has been downloaded instead. You can now manually send it on WhatsApp.");
+      }
+    } catch (error) {
+      console.error('QR code sharing error:', error);
+      alert('Failed to share QR Code image.');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
       <div
@@ -273,6 +304,16 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
             >
               <MessageSquare className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>WhatsApp Alert</span>
+            </button>
+
+            <button
+              onClick={handleShareQRCodeImage}
+              disabled={downloading}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-650 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-600 transition-colors"
+              title="Share QR Code Image"
+            >
+              <QrCode className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Share QR</span>
             </button>
 
             <button
