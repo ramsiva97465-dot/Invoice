@@ -213,7 +213,14 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
 
   const handleWhatsAppTextAlert = () => {
     const formattedPhone = formatPhoneForWhatsApp(invoice.customer_mobile || '');
-    const message = `Hello ${invoice.customer_name},\n\nYour invoice *${invoice.invoice_number}* from *${companySettings.company_name}* is ready.\n\n*Amount Due*: ₹${invoice.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n*Status*: ${invoice.payment_status}\n\nYou can pay using UPI ID: ${companySettings.upi_id}\n\nThank you!\n- Powered by Xivora`;
+    
+    // Create a standard UPI payment URL for phone payment app integration
+    const upiDirectPayUrl = `upi://pay?pa=${companySettings.upi_id}&pn=${encodeURIComponent(companySettings.company_name)}&am=${invoice.total_amount}&tn=${invoice.invoice_number}`;
+    
+    // Create a public URL link to display the QR code image
+    const publicQrCodeLink = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiDirectPayUrl)}`;
+
+    const message = `Hello ${invoice.customer_name},\n\nYour invoice *${invoice.invoice_number}* from *${companySettings.company_name}* is ready.\n\n*Amount Due*: ₹${invoice.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n*Status*: ${invoice.payment_status}\n\n*UPI ID*: ${companySettings.upi_id}\n\n*Tap here to pay directly*:\n${upiDirectPayUrl}\n\n*Or view QR Code to Scan*:\n${publicQrCodeLink}\n\nThank you!\n- Powered by Xivora`;
     
     const url = `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
