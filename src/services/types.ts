@@ -41,6 +41,7 @@ export interface Invoice {
   id: string;
   invoice_number: string;
   invoice_date: string;
+  due_date?: string;
   customer_id: string;
   notes: string;
   subtotal: number;
