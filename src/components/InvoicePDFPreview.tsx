@@ -92,6 +92,74 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
     }
   };
 
+  const handleShareWhatsApp = async () => {
+    if (!invoiceRef.current) return;
+    setDownloading(true);
+
+    try {
+      const element = invoiceRef.current;
+      
+      // Save original styles to restore them later
+      const originalWidth = element.style.width;
+      const originalMinWidth = element.style.minWidth;
+      
+      // Force desktop size for html2canvas
+      element.style.width = '800px';
+      element.style.minWidth = '800px';
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        windowWidth: 800,
+      });
+
+      // Restore original styles
+      element.style.width = originalWidth;
+      element.style.minWidth = originalMinWidth;
+
+      const imgData = canvas.toDataURL('image/png');
+
+      // Page size A4: 210mm x 297mm
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const pdfBlob = pdf.output('blob');
+      const pdfFile = new File([pdfBlob], `${invoice.invoice_number}.pdf`, { type: 'application/pdf' });
+
+      if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+        await navigator.share({
+          files: [pdfFile],
+          title: `Invoice ${invoice.invoice_number}`,
+          text: `Dear Customer, please find attached your invoice ${invoice.invoice_number} from ${companySettings.company_name}.`,
+        });
+      } else {
+        // Fallback: download the file and alert the user
+        pdf.save(`${invoice.invoice_number}.pdf`);
+        alert("Direct PDF sharing is not supported by your browser/device. The PDF has been downloaded to your device instead. You can now manually attach and send it on WhatsApp.");
+      }
+    } catch (error) {
+      console.error('PDF sharing error:', error);
+      alert('Failed to share PDF.');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
       <div
@@ -118,6 +186,16 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
             >
               <Download className="h-3.5 w-3.5" />
               <span>{downloading ? 'Downloading...' : 'Download PDF'}</span>
+            </button>
+            <button
+              onClick={handleShareWhatsApp}
+              disabled={downloading}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-50 transition-all"
+            >
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-current" xmlns="http://www.w3.org/2000/svg">
+                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.5-5.739-1.446L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.864-9.864.002-2.637-1.03-5.116-2.905-6.993C16.554 1.87 14.079.841 11.443.84 6.008.84 1.585 5.26 1.581 10.7c-.001 1.77.464 3.497 1.348 5.016l-.993 3.626 3.712-.973zm11.514-6.182c-.303-.153-1.78-.878-2.057-.978-.277-.1-.478-.153-.679.153-.202.302-.782.978-.96 1.181-.177.202-.355.226-.658.074-.303-.152-1.28-.471-2.438-1.503-.9-.802-1.507-1.793-1.684-2.097-.177-.302-.019-.465.132-.616.136-.135.303-.352.454-.529.152-.177.202-.303.303-.505.1-.202.05-.379-.025-.53-.076-.153-.679-1.637-.93-2.247-.244-.587-.492-.507-.679-.516-.174-.008-.373-.01-.572-.01-.199 0-.525.075-.799.375-.274.3-.1.583-.1 1.258 0 2.053 1.494 4.036 1.7 4.313.205.277 2.937 4.485 7.114 6.29 1 .43 1.777.687 2.383.879 1.002.318 1.916.273 2.638.165.803-.12 1.78-.727 2.03-1.402.25-.675.25-1.253.175-1.378-.075-.125-.275-.202-.578-.354z"/>
+              </svg>
+              <span>Share</span>
             </button>
             <button
               onClick={onClose}
