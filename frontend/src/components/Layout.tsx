@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 import { useAuth } from '../context/AuthContext';
 import { RemindersPanel } from './RemindersPanel';
+import logoImg from '../assets/logo.png';
 
 import { 
   LayoutDashboard, 
@@ -72,15 +73,18 @@ export const Layout: React.FC<LayoutProps> = ({
       `}>
         
         {/* Sidebar Header Brand */}
-        <div className="flex items-center justify-between h-16 px-6 border-b border-slate-100 dark:border-slate-700">
-          <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-emerald-500 text-white shadow-md shadow-emerald-500/20">
-              <Wifi className="h-6 w-6 animate-pulse" />
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-700">
+          <div className="flex items-center gap-3 group cursor-pointer">
+            <div className="p-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-700/50 shadow-sm transition-all duration-300 hover:scale-[1.03] hover:shadow-md">
+              <img src={logoImg} alt="Xivora Logo" className="h-11 w-auto object-contain" />
             </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white font-sans flex items-center gap-1">
-Xivora <span className="text-xs font-semibold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">Invoice Studio</span>
-              </h1>
+            <div className="flex flex-col">
+              <span className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white font-sans leading-none">
+                Xivora
+              </span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mt-1.5">
+                Invoice Studio
+              </span>
             </div>
           </div>
           <button 

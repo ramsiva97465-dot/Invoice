@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Wifi, Lock, Mail, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { Lock, Mail, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '../components/Toast';
+import logoImg from '../assets/logo.png';
 
 export const Login: React.FC = () => {
   const { login, signUp } = useAuth();
@@ -62,11 +63,9 @@ export const Login: React.FC = () => {
         
         {/* Brand Banner */}
         <div className="flex flex-col items-center mb-8">
-          <div className="p-3 bg-emerald-500 text-white rounded-2xl shadow-xl shadow-emerald-500/20 mb-3">
-            <Wifi className="h-8 w-8 animate-pulse" />
+          <div className="bg-white p-3.5 rounded-2xl shadow-xl shadow-slate-950/20 border border-slate-200/50 flex items-center justify-center max-w-[240px]">
+            <img src={logoImg} alt="Xivora Logo" className="h-16 w-auto object-contain" />
           </div>
-          <h2 className="text-2xl font-extrabold text-white tracking-tight">Xivora Invoice Studio</h2>
-          <p className="text-sm text-slate-400 mt-1">Xivora Invoice Studio</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">

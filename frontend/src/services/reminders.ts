@@ -6,7 +6,7 @@ import type { Reminder } from './types';
 export const remindersService = {
   async getReminders(unreadOnly: boolean = true): Promise<Reminder[]> {
     const client = dbService.ensureSupabase();
-    const companyId = await (dbService as any).getCompanyId();
+    const companyId = await dbService.getCompanyId();
     if (!companyId) {
       return [];
     }
@@ -27,7 +27,7 @@ export const remindersService = {
 
   async markReminderRead(id: string): Promise<void> {
     const client = dbService.ensureSupabase();
-    const companyId = await (dbService as any).getCompanyId();
+    const companyId = await dbService.getCompanyId();
     if (!companyId) {
       throw new Error('No active company context');
     }

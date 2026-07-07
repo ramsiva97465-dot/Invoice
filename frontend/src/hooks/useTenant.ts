@@ -1,5 +1,10 @@
-import { useTenant as useTenantContext } from '../context/TenantContext';
+import { useContext } from 'react';
+import { TenantContext } from '../context/TenantContextObject';
 
 export const useTenant = () => {
-  return useTenantContext();
+  const context = useContext(TenantContext);
+  if (context === undefined) {
+    throw new Error('useTenant must be used within a TenantProvider');
+  }
+  return context;
 };

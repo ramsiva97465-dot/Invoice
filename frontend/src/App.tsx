@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { TenantProvider, useTenant } from './context/TenantContext';
+import { TenantProvider } from './context/TenantContext';
+import { useTenant } from './hooks/useTenant';
 import { ToastProvider, useToast } from './components/Toast';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';

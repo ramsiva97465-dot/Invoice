@@ -1,14 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { dbService, isSupabaseConfigured } from '../services/db';
-
-interface TenantContextType {
-  companyId: string | null;
-  loading: boolean;
-  error: Error | null;
-}
-
-const TenantContext = createContext<TenantContextType | undefined>(undefined);
+import { TenantContext } from './TenantContextObject';
 
 export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
@@ -19,8 +12,10 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     if (!isSupabaseConfigured) {
       // Demo/Fallback mode
-      setCompanyId('00000000-0000-0000-0000-000000000000');
-      setLoading(false);
+      Promise.resolve().then(() => {
+        setCompanyId('00000000-0000-0000-0000-000000000000');
+        setLoading(false);
+      });
       return;
     }
 
@@ -79,12 +74,4 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       {children}
     </TenantContext.Provider>
   );
-};
-
-export const useTenant = () => {
-  const context = useContext(TenantContext);
-  if (context === undefined) {
-    throw new Error('useTenant must be used within a TenantProvider');
-  }
-  return context;
 };
