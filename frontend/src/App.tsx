@@ -21,7 +21,7 @@ import type { Customer, CompanySettings, InvoiceItem } from './services/types';
 // Main Application shell that handles state, tab navigation, theme modes
 const AppContent: React.FC = () => {
   const { user, loading: authLoading } = useAuth();
-  const { loading: tenantLoading } = useTenant();
+  const { companyId, loading: tenantLoading } = useTenant();
   const { showToast } = useToast();
 
   const loading = authLoading || (!!user && tenantLoading);
@@ -51,7 +51,7 @@ const AppContent: React.FC = () => {
   // Fetch company configurations ONLY after auth succeeds
   useEffect(() => {
     const loadSettings = async () => {
-      if (!user) return;
+      if (!user || !companyId) return;
       try {
         const settings = await dbService.getCompanySettings();
         setCompanySettings(settings);
@@ -60,12 +60,12 @@ const AppContent: React.FC = () => {
       }
     };
     loadSettings();
-  }, [user]);
+  }, [user, companyId]);
 
   // Fetch Telegram settings ONLY after auth succeeds
   useEffect(() => {
     const loadTelegram = async () => {
-      if (!user) return;
+      if (!user || !companyId) return;
       try {
         const tg = await dbService.getTelegramSettings();
         setTelegramSettings(tg);
@@ -74,7 +74,7 @@ const AppContent: React.FC = () => {
       }
     };
     loadTelegram();
-  }, [user]);
+  }, [user, companyId]);
 
   // Sync dark mode style class with root document
   useEffect(() => {
@@ -89,12 +89,12 @@ const AppContent: React.FC = () => {
 
   // Fetch lists when user signs in or when updates trigger
   useEffect(() => {
-    if (user) {
+    if (user && companyId) {
       dbService.getCustomers('', 'Active').then((data) => {
         setAllCustomers(data);
       }).catch(console.error);
     }
-  }, [user, customersUpdated]);
+  }, [user, companyId, customersUpdated]);
 
   const toggleDarkMode = () => {
     setDarkMode(!darkMode);

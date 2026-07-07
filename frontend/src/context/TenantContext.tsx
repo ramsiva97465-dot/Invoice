@@ -51,19 +51,21 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           .eq('user_id', authUser.id)
           .maybeSingle();
 
-        if (memberError) throw memberError;
+        if (memberError) {
+          console.error('Error fetching tenant_members in TenantContext:', memberError);
+          throw memberError;
+        }
 
         if (member?.company_id) {
           setCompanyId(member.company_id);
         } else {
-          // If the user belongs to no company, fallback to default company
-          setCompanyId('00000000-0000-0000-0000-000000000000');
+          console.warn(`No tenant found for user ${authUser.id} in TenantContext.`);
+          setCompanyId(null);
         }
       } catch (err: unknown) {
         console.error('Error resolving tenant:', err);
         setError(err instanceof Error ? err : new Error(String(err)));
-        // Fallback to default company on error so the app doesn't brick for existing users
-        setCompanyId('00000000-0000-0000-0000-000000000000');
+        setCompanyId(null);
       } finally {
         setLoading(false);
       }

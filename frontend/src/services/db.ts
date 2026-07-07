@@ -34,23 +34,23 @@ if (isSupabaseConfigured) {
 let cachedCompanyId: string | null = null;
 let cachedUserId: string | null = null;
 
-async function getCompanyId(): Promise<string> {
+async function getCompanyId(): Promise<string | null> {
   if (!isSupabaseConfigured) {
-    return '00000000-0000-0000-0000-000000000000';
+    return null;
   }
   if (!supabase) {
-    throw new Error('Supabase client is not initialized');
+    return null;
   }
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     cachedCompanyId = null;
     cachedUserId = null;
-    throw new Error('User is not authenticated');
+    return null;
   }
 
   if (cachedUserId === user.id && cachedCompanyId) {
-    return cachedCompanyId as string;
+    return cachedCompanyId;
   }
 
   const { data, error } = await supabase
@@ -59,12 +59,19 @@ async function getCompanyId(): Promise<string> {
     .eq('user_id', user.id)
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) {
+    console.error('Error fetching tenant_members in getCompanyId:', error);
+    return null;
+  }
 
   cachedUserId = user.id;
-  const companyIdResult = data?.company_id || '00000000-0000-0000-0000-000000000000';
-  cachedCompanyId = companyIdResult;
-  return companyIdResult;
+  const resolvedId = data?.company_id;
+  if (!resolvedId || resolvedId === 'undefined' || resolvedId === 'null') {
+    cachedCompanyId = null;
+    return null;
+  }
+  cachedCompanyId = resolvedId;
+  return resolvedId;
 }
 
 export const dbService = {
@@ -83,6 +90,9 @@ export const dbService = {
   async getTelegramSettings(): Promise<TelegramSettings> {
     const client = this.ensureSupabase();
     const companyId = await getCompanyId();
+    if (!companyId) {
+      return { bot_token: '', chat_id: '' };
+    }
     const { data, error } = await client
       .from('telegram_settings')
       .select('*')
@@ -98,6 +108,9 @@ export const dbService = {
   async updateTelegramSettings(settings: TelegramSettings): Promise<TelegramSettings> {
     const client = this.ensureSupabase();
     const companyId = await getCompanyId();
+    if (!companyId) {
+      throw new Error('No active company context');
+    }
 
     // Get current user for RLS
     const { data: sessionData, error: sessionError } = await client.auth.getSession();
@@ -130,6 +143,21 @@ export const dbService = {
   async getCompanySettings(): Promise<CompanySettings> {
     const client = this.ensureSupabase();
     const companyId = await getCompanyId();
+    if (!companyId) {
+      return {
+        company_name: '',
+        mobile_number: '',
+        address: '',
+        email: '',
+        gst_number: '',
+        bank_name: '',
+        account_number: '',
+        ifsc_code: '',
+        upi_id: '',
+        logo_url: '',
+        gst_percentage: 18,
+      } as CompanySettings;
+    }
     const { data, error } = await client
       .from('company_settings')
       .select('*')
@@ -157,6 +185,9 @@ export const dbService = {
   async updateCompanySettings(settings: CompanySettings): Promise<CompanySettings> {
     const client = this.ensureSupabase();
     const companyId = await getCompanyId();
+    if (!companyId) {
+      throw new Error('No active company context');
+    }
 
     const { data: existing, error: existingError } = await client
       .from('company_settings')
@@ -191,6 +222,9 @@ export const dbService = {
   async getCustomers(query: string = '', status: string = 'All'): Promise<Customer[]> {
     const client = this.ensureSupabase();
     const companyId = await getCompanyId();
+    if (!companyId) {
+      return [];
+    }
 
     let q = client.from('customers').select('*').eq('company_id', companyId);
 
@@ -211,6 +245,9 @@ export const dbService = {
   async addCustomer(customer: Omit<Customer, 'id' | 'customer_id' | 'created_at'>): Promise<Customer> {
     const client = this.ensureSupabase();
     const companyId = await getCompanyId();
+    if (!companyId) {
+      throw new Error('No active company context');
+    }
 
     // Verify session (auth guard)
     const { data: sessionData, error: sessionError } = await client.auth.getSession();
@@ -252,6 +289,9 @@ export const dbService = {
   async updateCustomer(id: string, updates: Partial<Customer>): Promise<Customer> {
     const client = this.ensureSupabase();
     const companyId = await getCompanyId();
+    if (!companyId) {
+      throw new Error('No active company context');
+    }
 
     // Auth guard
     const { error: sessionError } = await client.auth.getSession();
@@ -276,6 +316,9 @@ export const dbService = {
   async deleteCustomer(id: string): Promise<void> {
     const client = this.ensureSupabase();
     const companyId = await getCompanyId();
+    if (!companyId) {
+      throw new Error('No active company context');
+    }
 
     // Auth guard
     const { error: sessionError } = await client.auth.getSession();
@@ -294,6 +337,9 @@ export const dbService = {
   async getInvoices(query: string = '', status: string = 'All'): Promise<Invoice[]> {
     const client = this.ensureSupabase();
     const companyId = await getCompanyId();
+    if (!companyId) {
+      return [];
+    }
 
     let q = client
       .from('invoices')
@@ -330,6 +376,9 @@ export const dbService = {
   async getInvoiceDetails(id: string): Promise<Invoice | null> {
     const client = this.ensureSupabase();
     const companyId = await getCompanyId();
+    if (!companyId) {
+      return null;
+    }
 
     const req = client
       .from('invoices')
@@ -397,6 +446,9 @@ export const dbService = {
 
     const client = this.ensureSupabase();
     const companyId = await getCompanyId();
+    if (!companyId) {
+      throw new Error('No active company context');
+    }
                                                 
     const { data: sessionData, error: sessionError } = await client.auth.getSession();
     if (sessionError) throw sessionError;
@@ -488,6 +540,9 @@ export const dbService = {
   async updateInvoiceStatus(id: string, payment_status: 'Paid' | 'Pending'): Promise<Invoice> {
     const client = this.ensureSupabase();
     const companyId = await getCompanyId();
+    if (!companyId) {
+      throw new Error('No active company context');
+    }
 
     // Auth guard
     const { error: sessionError } = await client.auth.getSession();
@@ -537,6 +592,9 @@ export const dbService = {
   async deleteInvoice(id: string): Promise<void> {
     const client = this.ensureSupabase();
     const companyId = await getCompanyId();
+    if (!companyId) {
+      throw new Error('No active company context');
+    }
 
     // Auth guard
     const { error: sessionError } = await client.auth.getSession();

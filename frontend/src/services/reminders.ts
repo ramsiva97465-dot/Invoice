@@ -7,6 +7,9 @@ export const remindersService = {
   async getReminders(unreadOnly: boolean = true): Promise<Reminder[]> {
     const client = dbService.ensureSupabase();
     const companyId = await (dbService as any).getCompanyId();
+    if (!companyId) {
+      return [];
+    }
 
     // reminders table: id, invoice_id, customer_id, phone/mob, remind_at, sent_at, read_at
     let q = client
@@ -25,6 +28,9 @@ export const remindersService = {
   async markReminderRead(id: string): Promise<void> {
     const client = dbService.ensureSupabase();
     const companyId = await (dbService as any).getCompanyId();
+    if (!companyId) {
+      throw new Error('No active company context');
+    }
 
     const { error } = await client
       .from('reminders')
