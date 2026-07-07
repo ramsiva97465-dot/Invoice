@@ -12,6 +12,7 @@ import {
   Check, 
   Clock 
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface DashboardProps {
   onNavigate: (tabId: string) => void;
@@ -31,6 +32,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   companySettings
 }) => {
   const { showToast } = useToast();
+  const { t } = useTranslation();
   interface MetricStats {
     totalCustomers: number;
     totalInvoices: number;
@@ -136,12 +138,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <Plus className="h-4 w-4 text-slate-400" />
             <span>Add Customer</span>
           </button>
-          <button
+        </div>
+      </div>
+
+      {/* Recent Invoices / Activity */}
+      <div className="mt-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-white font-sans">{t('dashboard.recentActivity')}</h2>
+          <button 
             onClick={openInvoiceModal}
-            className="flex items-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/15 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:hover:bg-emerald-500/20 transition-all font-sans"
           >
-            <Plus className="h-4 w-4" />
-            <span>Generate Bill</span>
+            <Plus className="h-3.5 w-3.5" />
+            <span>{t('invoices.createInvoice')}</span>
           </button>
         </div>
       </div>
@@ -173,12 +182,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                <th className="px-5 py-3 font-sans">Invoice No</th>
-                <th className="px-5 py-3 font-sans">Customer</th>
+                <th className="px-5 py-3 font-sans">{t('invoices.invoiceNumber')}</th>
+                <th className="px-5 py-3 font-sans">{t('invoices.customer')}</th>
                 <th className="px-5 py-3 font-sans">Plan</th>
-                <th className="px-5 py-3 text-right font-sans">Amount</th>
-                <th className="px-5 py-3 text-center font-sans">Status</th>
-                <th className="px-5 py-3 text-center font-sans w-20">Actions</th>
+                <th className="px-5 py-3 text-right font-sans">{t('invoices.amount')}</th>
+                <th className="px-5 py-3 text-center font-sans">{t('invoices.status')}</th>
+                <th className="px-5 py-3 text-center font-sans w-20">{t('customers.actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -229,7 +238,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               {recentInvoices.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-5 py-8 text-center text-slate-400 font-sans">
-                    No transactions generated yet. Click 'Generate Bill' to create one.
+                    {t('dashboard.noRecentActivity')}
                   </td>
                 </tr>
               )}

@@ -1,0 +1,75 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "customers": "Customers",
+    "invoices": "Invoices",
+    "products": "Products",
+    "company": "Company",
+    "settings": "Settings",
+    "communication": "Communication",
+    "logout": "Log Out"
+  },
+  "header": {
+    "selectLanguage": "Select Language",
+    "toggleTheme": "Toggle Light/Dark Mode",
+    "demoMode": "Demo Mode",
+    "connected": "Connected to Supabase"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "totalRevenue": "Total Revenue",
+    "totalInvoices": "Total Invoices",
+    "paidInvoices": "Paid Invoices",
+    "pendingInvoices": "Pending Invoices",
+    "totalCustomers": "Total Customers",
+    "monthlyRevenue": "Monthly Revenue",
+    "recentActivity": "Recent Activity",
+    "noRecentActivity": "No recent activity found",
+    "vsLastMonth": "vs last month",
+    "revenueOverview": "Revenue Overview",
+    "invoiceStatus": "Invoice Status"
+  },
+  "customers": {
+    "title": "Customers",
+    "search": "Search customers...",
+    "addCustomer": "Add Customer",
+    "name": "Name",
+    "company": "Company",
+    "email": "Email",
+    "phone": "Phone",
+    "actions": "Actions",
+    "noCustomers": "No customers found. Add your first customer to get started!"
+  },
+  "invoices": {
+    "title": "Invoices",
+    "createInvoice": "Create Invoice",
+    "search": "Search invoices...",
+    "invoiceNumber": "Invoice Number",
+    "customer": "Customer",
+    "date": "Date",
+    "amount": "Amount",
+    "status": "Status",
+    "statusDraft": "Draft",
+    "statusSent": "Sent",
+    "statusPaid": "Paid",
+    "statusOverdue": "Overdue",
+    "noInvoices": "No invoices found. Create your first invoice!"
+  },
+  "products": {
+    "title": "Products & Services",
+    "search": "Search products...",
+    "addProduct": "Add Product",
+    "name": "Name",
+    "description": "Description",
+    "price": "Price",
+    "noProducts": "No products found. Add your first product!"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "view": "View",
+    "loading": "Loading..."
+  }
+}

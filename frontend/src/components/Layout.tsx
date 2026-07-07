@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { RemindersPanel } from './RemindersPanel';
 import logoImg from '../assets/logo.png';
+import { useTranslation } from 'react-i18next';
 
 import { 
   LayoutDashboard, 
@@ -33,15 +34,34 @@ export const Layout: React.FC<LayoutProps> = ({
   darkMode, 
   toggleDarkMode 
 }) => {
-  const { user, logout, demoMode } = useAuth();
+  const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { t, i18n } = useTranslation();
+  
+  const isDemoMode = import.meta.env.VITE_SUPABASE_URL === 'your-project-url' || 
+                   import.meta.env.VITE_SUPABASE_ANON_KEY === 'your-anon-key' ||
+                   !import.meta.env.VITE_SUPABASE_URL;
+
+  const [demoMode] = useState(isDemoMode);
+
+  const changeLanguage = (lng: string) => {
+    i18n.changeLanguage(lng);
+  };
+
+  const currentLangLabel = () => {
+    switch (i18n.language) {
+      case 'ta': return 'TAM';
+      case 'hi': return 'HIN';
+      default: return 'ENG';
+    }
+  };
 
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'customers', label: 'Customers', icon: Users },
-    { id: 'invoices', label: 'Invoices', icon: FileText },
+    { id: 'dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { id: 'customers', label: t('nav.customers'), icon: Users },
+    { id: 'invoices', label: t('nav.invoices'), icon: FileText },
     { id: 'telegram', label: 'Telegram', icon: Wifi },
-    { id: 'settings', label: 'Settings', icon: SettingsIcon },
+    { id: 'settings', label: t('nav.settings'), icon: SettingsIcon },
   ];
 
   const handleNavClick = (tabId: string) => {
@@ -131,13 +151,13 @@ export const Layout: React.FC<LayoutProps> = ({
               <p className="text-xs truncate text-slate-400 font-sans">{user?.email}</p>
             </div>
           </div>
-          <button
-            onClick={logout}
-            className="w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold text-red-600 hover:text-white bg-red-50 dark:bg-red-950/20 hover:bg-red-500 dark:hover:bg-red-600 border border-red-100 dark:border-red-950/50 rounded-lg transition-all"
-          >
-            <LogOut className="h-4 w-4" />
-            <span>Sign Out</span>
-          </button>
+            <button
+              onClick={() => logout()}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold font-sans text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all"
+            >
+              <LogOut className="h-5 w-5 text-rose-500 dark:text-rose-400" />
+              {t('nav.logout')}
+            </button>
         </div>
       </aside>
 
@@ -162,23 +182,23 @@ export const Layout: React.FC<LayoutProps> = ({
             <div className="relative group flex items-center">
               <button
                 className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center gap-1"
-                title="Select Language"
+                title={t('header.selectLanguage')}
               >
                 <Globe className="h-5 w-5" />
-                <span className="text-xs font-semibold hidden sm:inline-block uppercase">EN</span>
+                <span className="text-xs font-semibold hidden sm:inline-block uppercase">{currentLangLabel()}</span>
               </button>
               {/* Dropdown Menu (Hidden by default, shown on hover) */}
               <div className="absolute right-0 top-full mt-1 w-36 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                 <div className="py-1">
-                  <button className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-between">
+                  <button onClick={() => changeLanguage('en')} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-between">
                     <span>English</span>
                     <span className="text-xs text-slate-400">ENG</span>
                   </button>
-                  <button className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-between">
+                  <button onClick={() => changeLanguage('ta')} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-between">
                     <span>தமிழ்</span>
                     <span className="text-xs text-slate-400">TAM</span>
                   </button>
-                  <button className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-between">
+                  <button onClick={() => changeLanguage('hi')} className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-between">
                     <span>हिन्दी</span>
                     <span className="text-xs text-slate-400">HIN</span>
                   </button>
@@ -190,7 +210,7 @@ export const Layout: React.FC<LayoutProps> = ({
             <button
               onClick={toggleDarkMode}
               className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
-              title="Toggle Light/Dark Mode"
+              title={t('header.toggleTheme')}
             >
               {darkMode ? <Sun className="h-5 w-5 text-amber-400" /> : <Moon className="h-5 w-5" />}
             </button>
@@ -211,7 +231,7 @@ export const Layout: React.FC<LayoutProps> = ({
             {/* Connection mode status badge */}
             <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 font-sans">
               <span className={`w-2 h-2 rounded-full ${demoMode ? 'bg-amber-400' : 'bg-emerald-500'}`}></span>
-              <span>{demoMode ? 'Demo Mode' : 'Connected to Supabase'}</span>
+              <span>{demoMode ? t('header.demoMode') : t('header.connected')}</span>
             </div>
           </div>
 

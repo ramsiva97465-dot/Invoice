@@ -1,0 +1,75 @@
+{
+  "nav": {
+    "dashboard": "डैशबोर्ड",
+    "customers": "ग्राहक",
+    "invoices": "चालान",
+    "products": "उत्पाद",
+    "company": "कंपनी",
+    "settings": "सेटिंग्स",
+    "communication": "संचार",
+    "logout": "लॉग आउट"
+  },
+  "header": {
+    "selectLanguage": "भाषा चुनें",
+    "toggleTheme": "लाइट/डार्क मोड टॉगल करें",
+    "demoMode": "डेमो मोड",
+    "connected": "सुपाबेस से जुड़ा है"
+  },
+  "dashboard": {
+    "title": "डैशबोर्ड",
+    "totalRevenue": "कुल राजस्व",
+    "totalInvoices": "कुल चालान",
+    "paidInvoices": "भुगतान किए गए चालान",
+    "pendingInvoices": "लंबित चालान",
+    "totalCustomers": "कुल ग्राहक",
+    "monthlyRevenue": "मासिक राजस्व",
+    "recentActivity": "हाल की गतिविधि",
+    "noRecentActivity": "कोई हाल की गतिविधि नहीं मिली",
+    "vsLastMonth": "पिछले महीने की तुलना में",
+    "revenueOverview": "राजस्व अवलोकन",
+    "invoiceStatus": "चालान की स्थिति"
+  },
+  "customers": {
+    "title": "ग्राहक",
+    "search": "ग्राहक खोजें...",
+    "addCustomer": "ग्राहक जोड़ें",
+    "name": "नाम",
+    "company": "कंपनी",
+    "email": "ईमेल",
+    "phone": "फ़ोन",
+    "actions": "कार्रवाई",
+    "noCustomers": "कोई ग्राहक नहीं मिला। आरंभ करने के लिए अपना पहला ग्राहक जोड़ें!"
+  },
+  "invoices": {
+    "title": "चालान",
+    "createInvoice": "चालान बनाएँ",
+    "search": "चालान खोजें...",
+    "invoiceNumber": "चालान संख्या",
+    "customer": "ग्राहक",
+    "date": "दिनांक",
+    "amount": "राशि",
+    "status": "स्थिति",
+    "statusDraft": "ड्राफ्ट",
+    "statusSent": "भेजा गया",
+    "statusPaid": "भुगतान किया गया",
+    "statusOverdue": "देय",
+    "noInvoices": "कोई चालान नहीं मिला। अपना पहला चालान बनाएँ!"
+  },
+  "products": {
+    "title": "उत्पाद और सेवाएँ",
+    "search": "उत्पाद खोजें...",
+    "addProduct": "उत्पाद जोड़ें",
+    "name": "नाम",
+    "description": "विवरण",
+    "price": "मूल्य",
+    "noProducts": "कोई उत्पाद नहीं मिला। अपना पहला उत्पाद जोड़ें!"
+  },
+  "common": {
+    "save": "सहेजें",
+    "cancel": "रद्द करें",
+    "edit": "संपादित करें",
+    "delete": "हटाएं",
+    "view": "देखें",
+    "loading": "लोड हो रहा है..."
+  }
+}

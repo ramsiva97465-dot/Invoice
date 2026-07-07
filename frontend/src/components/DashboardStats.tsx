@@ -1,5 +1,6 @@
 import React from 'react';
 import { Users, FileText, CheckCircle, Clock, IndianRupee, Landmark } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface MetricStats {
   totalCustomers: number;
@@ -15,39 +16,47 @@ interface DashboardStatsProps {
 }
 
 export const DashboardStats: React.FC<DashboardStatsProps> = ({ metrics }) => {
+  const { t } = useTranslation();
   
   const stats = [
     {
+      id: 'total-revenue',
+      name: t('dashboard.totalRevenue'),
+      value: `₹${metrics.totalRevenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`,
+      icon: Landmark,
+      color: 'text-violet-600 bg-violet-50 dark:bg-violet-500/10 border-violet-100 dark:border-violet-500/20',
+    },
+    {
+      id: 'total-invoices',
+      name: t('dashboard.totalInvoices'),
+      value: metrics.totalInvoices.toString(),
+      icon: FileText,
+      color: 'text-blue-600 bg-blue-50 dark:bg-blue-500/10 border-blue-100 dark:border-blue-500/20',
+    },
+    {
+      id: 'paid-invoices',
+      name: t('dashboard.paidInvoices'),
+      value: metrics.paidCount.toString(),
+      icon: CheckCircle,
+      color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 border-emerald-100 dark:border-emerald-500/20',
+    },
+    {
+      id: 'pending-invoices',
+      name: t('dashboard.pendingInvoices'),
+      value: metrics.pendingCount.toString(),
+      icon: Clock,
+      color: 'text-amber-600 bg-amber-50 dark:bg-amber-500/10 border-amber-100 dark:border-amber-500/20',
+    },
+    {
       id: 'total-customers',
-      name: 'Total Customers',
-      value: metrics.totalCustomers,
+      name: t('dashboard.totalCustomers'),
+      value: metrics.totalCustomers.toString(),
       icon: Users,
       color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/30 border-blue-100 dark:border-blue-900/30',
     },
     {
-      id: 'total-invoices',
-      name: 'Invoices Generated',
-      value: metrics.totalInvoices,
-      icon: FileText,
-      color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/30 border-purple-100 dark:border-purple-900/30',
-    },
-    {
-      id: 'paid-invoices',
-      name: 'Paid Invoices',
-      value: metrics.paidCount,
-      icon: CheckCircle,
-      color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/30',
-    },
-    {
-      id: 'pending-invoices',
-      name: 'Pending Payments',
-      value: metrics.pendingCount,
-      icon: Clock,
-      color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/30 border-amber-100 dark:border-amber-900/30',
-    },
-    {
       id: 'monthly-revenue',
-      name: 'Monthly Revenue',
+      name: t('dashboard.monthlyRevenue'),
       value: `₹${metrics.monthlyRevenue.toLocaleString('en-IN')}`,
       icon: IndianRupee,
       color: 'text-emerald-600 bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-100 dark:border-emerald-900/30',
