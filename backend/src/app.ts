@@ -15,6 +15,7 @@ app.use(helmet());
 app.use(
   cors({
     origin: [
+      "https://invoice-neon-pi.vercel.app",
       "https://invoice-green-xi.vercel.app",
       "http://localhost:5173"
     ],
