@@ -254,14 +254,29 @@ export const dbService = {
     if (sessionError) throw sessionError;
     const userId = sessionData?.session?.user?.id;
 
-    // Next numeric suffix (scoped to company)
-    const countRes = await client
-      .from('customers')
-      .select('id', { count: 'exact', head: true })
-      .eq('company_id', companyId);
+    // Find the highest existing customer ID suffix (handles deletions correctly)
+    const year = new Date().getFullYear();
+    const prefix = `SCN-${year}-`;
 
-    const nextNum = (countRes.count ?? 0) + 101;
-    const customer_id = `SCN-${new Date().getFullYear()}-${nextNum}`;
+    const { data: existing } = await client
+      .from('customers')
+      .select('customer_id')
+      .eq('company_id', companyId)
+      .like('customer_id', `${prefix}%`)
+      .order('customer_id', { ascending: false })
+      .limit(1);
+
+    let nextNum = 101;
+    if (existing && existing.length > 0) {
+      const lastId = existing[0].customer_id as string;
+      const lastSuffix = lastId.replace(prefix, '');
+      const parsed = parseInt(lastSuffix, 10);
+      if (!isNaN(parsed)) {
+        nextNum = parsed + 1;
+      }
+    }
+
+    const customer_id = `${prefix}${nextNum}`;
 
     const payload = {
       name: customer.name,
