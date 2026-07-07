@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import type { Invoice, CompanySettings } from '../services/types';
-import { Printer, X, Award, Palette, Send } from 'lucide-react';
+import { Printer, X, Award, Palette, Send, Download } from 'lucide-react';
+import html2pdf from 'html2pdf.js';
 import { CommunicationCenter } from './CommunicationCenter';
 
 interface InvoicePDFPreviewProps {
@@ -86,6 +87,41 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownload = async () => {
+    if (!invoiceRef.current || !invoice) return;
+    
+    const element = invoiceRef.current;
+    
+    // Save original styles to restore later
+    const originalShadow = element.style.boxShadow;
+    const originalBorder = element.style.border;
+    const originalScale = element.style.transform;
+    
+    // Remove shadows/borders for clean PDF capture
+    element.style.boxShadow = 'none';
+    element.style.border = 'none';
+    element.style.transform = 'none';
+    
+    const opt = {
+      margin: 0,
+      filename: `Invoice_${invoice.invoice_number}.pdf`,
+      image: { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, logging: false },
+      jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const }
+    };
+
+    try {
+      await html2pdf().from(element).set(opt).save();
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    } finally {
+      // Restore original styles
+      element.style.boxShadow = originalShadow;
+      element.style.border = originalBorder;
+      element.style.transform = originalScale;
+    }
   };
 
   /*
@@ -227,6 +263,14 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
             >
               <Printer className="h-3.5 w-3.5" />
               <span>Print</span>
+            </button>
+
+            <button
+              onClick={handleDownload}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-650 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-600 transition-colors"
+            >
+              <Download className="h-3.5 w-3.5" />
+              <span>Download</span>
             </button>
 
             <button
