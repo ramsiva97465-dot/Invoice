@@ -14,7 +14,8 @@ import {
   Sun, 
   Moon, 
   Menu, 
-  X 
+  X,
+  Globe
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -157,6 +158,31 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Language Selector */}
+            <div className="relative group flex items-center">
+              <button
+                className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors flex items-center gap-1"
+                title="Select Language"
+              >
+                <Globe className="h-5 w-5" />
+                <span className="text-xs font-semibold hidden sm:inline-block uppercase">EN</span>
+              </button>
+              {/* Dropdown Menu (Hidden by default, shown on hover) */}
+              <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                <div className="py-1">
+                  <button className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2">
+                    <span className="text-lg">🇬🇧</span> English
+                  </button>
+                  <button className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2">
+                    <span className="text-lg">🇪🇸</span> Español
+                  </button>
+                  <button className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2">
+                    <span className="text-lg">🇫🇷</span> Français
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* Theme Toggle Button */}
             <button
               onClick={toggleDarkMode}
