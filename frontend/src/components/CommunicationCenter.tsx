@@ -13,7 +13,10 @@ import {
   Phone,
   Hash,
   Calendar,
-  DollarSign
+  DollarSign,
+  CheckCircle,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 import type { Invoice, CompanySettings } from '../services/types';
 
@@ -63,11 +66,15 @@ Powered by Xivora`;
     setMessage(defaultMessage);
   }, [invoice, companySettings]);
 
-  if (!isOpen) return null;
+  const [sending, setSending] = useState(false);
+  const [sendStatus, setSendStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [statusMessage, setStatusMessage] = useState('');
 
   const handleSend = async () => {
+    setSending(true);
+    setSendStatus('idle');
     try {
-      await communicationService.prepareDeliveryPayload(
+      const payload = await communicationService.prepareDeliveryPayload(
         selectedChannel,
         invoice,
         companySettings,
@@ -78,11 +85,26 @@ Powered by Xivora`;
         },
         message
       );
-    } catch (err) {
-      console.error('Error preparing communication payload:', err);
+
+      const result = await communicationService.sendPayload(payload);
+      setSendStatus('success');
+      setStatusMessage(result.message || 'Invoice sent successfully!');
+
+      // Auto-close after a brief delay so user sees the success state
+      setTimeout(() => {
+        onClose();
+        setSendStatus('idle');
+      }, 1500);
+    } catch (err: any) {
+      console.error('Error sending invoice:', err);
+      setSendStatus('error');
+      setStatusMessage(err.message || 'Failed to send invoice. Please try again.');
+    } finally {
+      setSending(false);
     }
-    onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in">
@@ -260,20 +282,51 @@ Powered by Xivora`;
         </div>
 
         {/* Modal Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-sm font-semibold rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-650 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSend}
-            className="flex items-center gap-1.5 px-5 py-2 text-sm font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/15 transition-all duration-200"
-          >
-            <Send className="h-4 w-4" />
-            <span>Send</span>
-          </button>
+        <div className="px-6 py-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-100 dark:border-slate-800 space-y-3">
+          {/* Status Feedback */}
+          {sendStatus === 'success' && (
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 text-sm font-medium animate-fade-in">
+              <CheckCircle className="h-4 w-4 flex-shrink-0" />
+              <span>{statusMessage}</span>
+            </div>
+          )}
+          {sendStatus === 'error' && (
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm font-medium animate-fade-in">
+              <AlertCircle className="h-4 w-4 flex-shrink-0" />
+              <span>{statusMessage}</span>
+            </div>
+          )}
+          <div className="flex items-center justify-end gap-3">
+            <button
+              onClick={onClose}
+              disabled={sending}
+              className="px-4 py-2 text-sm font-semibold rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-650 dark:border-slate-800 dark:text-slate-300 dark:hover:bg-slate-900 transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSend}
+              disabled={sending || sendStatus === 'success'}
+              className="flex items-center gap-1.5 px-5 py-2 text-sm font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/15 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {sending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Sending…</span>
+                </>
+              ) : sendStatus === 'success' ? (
+                <>
+                  <CheckCircle className="h-4 w-4" />
+                  <span>Sent!</span>
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  <span>Send</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
 
       </div>

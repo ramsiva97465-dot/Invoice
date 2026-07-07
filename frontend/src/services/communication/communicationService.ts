@@ -2,6 +2,21 @@ import type { DeliveryPayload, DeliveryChannel, AttachmentOptions } from './comm
 import type { Invoice, CompanySettings } from '../types';
 import { messageBuilder } from './messageBuilder';
 import { attachmentBuilder } from './attachmentBuilder';
+import { API } from '../../config/api';
+
+export interface SendResponse {
+  status: 'success' | 'error';
+  message: string;
+  data?: {
+    deliveryId: string;
+    channel: string;
+    recipient: string;
+    invoiceNumber: string;
+    amount: number;
+    attachments: { pdf: boolean; qr: boolean; brochure: boolean };
+  };
+  timestamp?: string;
+}
 
 export const communicationService = {
   async prepareDeliveryPayload(
@@ -53,5 +68,23 @@ export const communicationService = {
 
     console.log('Complete Payload:', payload);
     return payload;
-  }
+  },
+
+  /**
+   * Send the prepared payload to the backend API.
+   */
+  async sendPayload(payload: DeliveryPayload): Promise<SendResponse> {
+    const response = await fetch(`${API.communication}/send`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Server error: ${response.status}`);
+    }
+
+    return response.json();
+  },
 };
