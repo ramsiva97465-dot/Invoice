@@ -472,13 +472,28 @@ export const dbService = {
     if (!invoice_number) {
       const d = invoiceData.invoice_date ? new Date(invoiceData.invoice_date) : new Date();
       const yyyymm = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const { count } = await client
+      const prefix = `INV-${yyyymm}-`;
+
+      // Find the highest existing sequence for this month (handles deletions correctly)
+      const { data: existing } = await client
         .from('invoices')
-        .select('id', { count: 'exact', head: true })
+        .select('invoice_number')
         .eq('company_id', companyId)
-        .like('invoice_number', `INV-${yyyymm}-%`);
-      const seq = String((count ?? 0) + 1).padStart(3, '0');
-      invoice_number = `INV-${yyyymm}-${seq}`;
+        .like('invoice_number', `${prefix}%`)
+        .order('invoice_number', { ascending: false })
+        .limit(1);
+
+      let nextSeq = 1;
+      if (existing && existing.length > 0) {
+        const lastNum = existing[0].invoice_number as string;
+        const lastSeqStr = lastNum.replace(prefix, '');
+        const parsed = parseInt(lastSeqStr, 10);
+        if (!isNaN(parsed)) {
+          nextSeq = parsed + 1;
+        }
+      }
+
+      invoice_number = `${prefix}${String(nextSeq).padStart(3, '0')}`;
     }
 
     const payload: Record<string, unknown> = {
