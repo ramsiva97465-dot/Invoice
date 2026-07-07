@@ -1,9 +1,6 @@
 import { Request, Response } from 'express';
 
-/**
- * GET /
- * Returns service metadata.
- */
+/** GET / — service identification */
 export const getRoot = (_req: Request, res: Response): void => {
   res.json({
     service: 'Xivora Backend',
@@ -12,10 +9,7 @@ export const getRoot = (_req: Request, res: Response): void => {
   });
 };
 
-/**
- * GET /health
- * Returns health status for load balancers / Render health checks.
- */
+/** GET /health — used by Render health checks */
 export const getHealth = (_req: Request, res: Response): void => {
   res.json({
     status: 'healthy',

@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Application } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
@@ -8,18 +8,21 @@ import { errorHandler } from './middleware/errorHandler';
 import { getRoot, getHealth } from './controllers/rootController';
 import apiRoutes from './routes';
 
-const app = express();
+const app: Application = express();
 
-// ── Security & parsing ───────────────────────────────────
+// ── Security & parsing ────────────────────────────────────
 app.use(helmet());
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
 
-// ── Rate limiting ────────────────────────────────────────
+// ── Rate limiting ─────────────────────────────────────────
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: {
     status: 'error',
     message: 'Too many requests from this IP, please try again after 15 minutes',
@@ -34,7 +37,7 @@ app.get('/health', getHealth);
 // ── API v1 routes ─────────────────────────────────────────
 app.use('/api/v1', apiRoutes);
 
-// ── Global error handler ──────────────────────────────────
+// ── Global error handler (must be last) ──────────────────
 app.use(errorHandler);
 
 export default app;
