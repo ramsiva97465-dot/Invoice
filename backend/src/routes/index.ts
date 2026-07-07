@@ -6,7 +6,7 @@ const router = Router();
 // import invoiceRoutes from './invoices';
 // router.use('/invoices', invoiceRoutes);
 //
-// import communicationRoutes from './communication';
-// router.use('/communication', communicationRoutes);
+import communicationRoutes from './communication';
+router.use('/communication', communicationRoutes);
 
 export default router;
