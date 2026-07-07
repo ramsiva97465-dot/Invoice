@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import type { Invoice, CompanySettings } from '../services/types';
 
+import { communicationService } from '../services/communication/communicationService';
+
 interface CommunicationCenterProps {
   isOpen: boolean;
   onClose: () => void;
@@ -41,17 +43,17 @@ export const CommunicationCenter: React.FC<CommunicationCenterProps> = ({
       ? new Date(invoice.invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
       : 'N/A';
 
-  const defaultMessage = `Hello ${invoice.customer_name || 'Customer'} 👋
+  const defaultMessage = `Hello {{CustomerName}} 👋
 
-Your invoice for ${companySettings.company_name || 'our company'} is ready.
+Your invoice for {{CompanyName}} is ready.
 
-🧾 Invoice No : ${invoice.invoice_number}
+🧾 Invoice No : {{InvoiceNumber}}
 
-💰 Amount : ₹${invoice.total_amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+💰 Amount : ₹{{Amount}}
 
-📅 Due Date : ${formattedDueDate}
+📅 Due Date : {{DueDate}}
 
-Thank you for choosing ${companySettings.company_name || 'our company'}.
+Thank you for choosing {{CompanyName}}.
 
 Powered by Xivora`;
 
@@ -63,13 +65,22 @@ Powered by Xivora`;
 
   if (!isOpen) return null;
 
-  const handleSend = () => {
-    console.log('📤 Communication Center - Send Options:', {
-      channel: selectedChannel,
-      attachPdf,
-      attachQR,
-      message
-    });
+  const handleSend = async () => {
+    try {
+      await communicationService.prepareDeliveryPayload(
+        selectedChannel,
+        invoice,
+        companySettings,
+        {
+          pdf: attachPdf,
+          qr: attachQR,
+          brochure: false
+        },
+        message
+      );
+    } catch (err) {
+      console.error('Error preparing communication payload:', err);
+    }
     onClose();
   };
 
