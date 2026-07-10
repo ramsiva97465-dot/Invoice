@@ -124,6 +124,61 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
     }
   };
 
+  const handleNativeShareWhatsApp = async (message: string) => {
+    if (!invoiceRef.current || !invoice) return;
+    
+    try {
+      const element = invoiceRef.current;
+      const originalShadow = element.style.boxShadow;
+      const originalBorder = element.style.border;
+      const originalScale = element.style.transform;
+      
+      element.style.boxShadow = 'none';
+      element.style.border = 'none';
+      element.style.transform = 'none';
+      
+      const opt = {
+        margin: 0,
+        filename: `Invoice_${invoice.invoice_number}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm' as const, format: 'a4', orientation: 'portrait' as const }
+      };
+
+      // Generate PDF blob instead of saving
+      const pdfBlob = await html2pdf().from(element).set(opt).output('blob');
+      
+      // Restore styles
+      element.style.boxShadow = originalShadow;
+      element.style.border = originalBorder;
+      element.style.transform = originalScale;
+
+      const file = new File([pdfBlob], `Invoice_${invoice.invoice_number}.pdf`, { type: 'application/pdf' });
+
+      // Check if native share is supported for files
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: `Invoice ${invoice.invoice_number}`,
+          text: message
+        });
+      } else {
+        // Fallback: Open wa.me with just text if file sharing is not supported (e.g. desktop)
+        // Clean mobile number
+        const formattedPhone = invoice.customer_mobile ? invoice.customer_mobile.replace(/\D/g, '') : '';
+        const finalPhone = (formattedPhone.length === 10) ? '91' + formattedPhone : formattedPhone;
+        const encodedMessage = encodeURIComponent(message);
+        const waUrl = finalPhone ? `https://wa.me/${finalPhone}?text=${encodedMessage}` : `https://wa.me/?text=${encodedMessage}`;
+        window.open(waUrl, '_blank');
+        
+        // Also download the PDF manually since it couldn't be attached
+        html2pdf().from(element).set(opt).save();
+      }
+    } catch (error) {
+      console.error('Error sharing to WhatsApp:', error);
+    }
+  };
+
   /*
   const handleShareWhatsApp = async () => {
     if (!invoiceRef.current) return;
@@ -480,6 +535,7 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
         onClose={() => setIsCommModalOpen(false)}
         invoice={invoice}
         companySettings={companySettings}
+        onShareWhatsApp={handleNativeShareWhatsApp}
       />
     </div>
   );

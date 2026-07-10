@@ -27,13 +27,15 @@ interface CommunicationCenterProps {
   onClose: () => void;
   invoice: Invoice;
   companySettings: CompanySettings;
+  onShareWhatsApp?: (message: string) => Promise<void>;
 }
 
 export const CommunicationCenter: React.FC<CommunicationCenterProps> = ({
   isOpen,
   onClose,
   invoice,
-  companySettings
+  companySettings,
+  onShareWhatsApp
 }) => {
   const [selectedChannel, setSelectedChannel] = useState<'whatsapp'>('whatsapp');
   const [attachPdf, setAttachPdf] = useState(true);
@@ -86,9 +88,15 @@ Powered by Xivora`;
         message
       );
 
-      const result = await communicationService.sendPayload(payload);
-      setSendStatus('success');
-      setStatusMessage(result.message || 'Invoice sent successfully!');
+      if (selectedChannel === 'whatsapp' && onShareWhatsApp) {
+        await onShareWhatsApp(payload.message);
+        setSendStatus('success');
+        setStatusMessage('Opened WhatsApp sharing!');
+      } else {
+        const result = await communicationService.sendPayload(payload);
+        setSendStatus('success');
+        setStatusMessage(result.message || 'Invoice sent successfully!');
+      }
 
       // Auto-close after a brief delay so user sees the success state
       setTimeout(() => {
