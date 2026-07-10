@@ -7,6 +7,9 @@ const router = Router();
 // router.use('/invoices', invoiceRoutes);
 //
 import communicationRoutes from './communication';
+import paymentRoutes from './payment';
+
 router.use('/communication', communicationRoutes);
+router.use('/payments', paymentRoutes);
 
 export default router;

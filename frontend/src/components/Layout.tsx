@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 import { useAuth } from '../context/AuthContext';
 import { RemindersPanel } from './RemindersPanel';
+import { UpgradeButton } from './UpgradeButton';
 import logoImg from '../assets/logo.png';
 import { useTranslation } from 'react-i18next';
 
@@ -178,6 +179,7 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
+            <UpgradeButton />
             {/* Language Selector */}
             <div className="relative group flex items-center">
               <button
