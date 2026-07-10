@@ -4,6 +4,7 @@ import { TenantProvider } from './context/TenantContext';
 import { useTenant } from './hooks/useTenant';
 import { ToastProvider, useToast } from './components/Toast';
 import { Layout } from './components/Layout';
+import { Landing } from './pages/Landing';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Customers } from './pages/Customers';
@@ -29,6 +30,7 @@ const AppContent: React.FC = () => {
 
   // Navigation / UI States
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showLogin, setShowLogin] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem('aitel_dark_mode') === 'true';
   });
@@ -167,9 +169,12 @@ const AppContent: React.FC = () => {
     );
   }
 
-  // Auth Portal if session is absent
+  // Auth Portal or Landing Page if session is absent
   if (!user) {
-    return <Login />;
+    if (showLogin) {
+      return <Login onBack={() => setShowLogin(false)} />;
+    }
+    return <Landing onLoginClick={() => setShowLogin(true)} />;
   }
 
   return (

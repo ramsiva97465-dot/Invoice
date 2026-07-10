@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Mail, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Lock, Mail, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '../components/Toast';
 import logoImg from '../assets/logo.png';
 
-export const Login: React.FC = () => {
+interface LoginProps {
+  onBack?: () => void;
+}
+
+export const Login: React.FC<LoginProps> = ({ onBack }) => {
   const { login, signUp } = useAuth();
   const { showToast } = useToast();
   const [email, setEmail] = useState('');
@@ -61,6 +65,15 @@ export const Login: React.FC = () => {
       {/* Login Card */}
       <div className="w-full max-w-md bg-slate-950/40 backdrop-blur-md rounded-3xl p-8 border border-slate-800 shadow-2xl relative z-10">
         
+        {onBack && (
+          <button 
+            onClick={onBack}
+            className="absolute top-6 left-6 text-slate-400 hover:text-white transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+        )}
+
         {/* Brand Banner */}
         <div className="flex flex-col items-center mb-8">
           <div className="bg-white p-3.5 rounded-2xl shadow-xl shadow-slate-950/20 border border-slate-200/50 flex items-center justify-center max-w-[240px]">
