@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
 import { paymentService } from '../services/paymentService';
-import { dbService } from '../services/db';
 import { useToast } from './Toast';
 import { X, Zap, CreditCard, QrCode, Upload, CheckCircle2 } from 'lucide-react';
-import { useTenant } from '../hooks/useTenant';
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -18,7 +22,6 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
   const [submitted, setSubmitted] = useState(false);
   
   const { showToast } = useToast();
-  const { currentCompany } = useTenant();
 
   if (!isOpen) return null;
 
@@ -54,8 +57,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) =
           }
         },
         prefill: {
-          name: currentCompany?.company_name || "Company Owner",
-          email: currentCompany?.email || "owner@company.com",
+          name: "Company Owner",
+          email: "owner@company.com",
         },
         theme: { color: "#10b981" }
       };
