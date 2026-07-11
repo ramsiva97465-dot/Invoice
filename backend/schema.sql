@@ -194,3 +194,58 @@ CREATE POLICY "Allow all access for authenticated users" ON reminders
 CREATE INDEX IF NOT EXISTS idx_reminders_read_at ON reminders(read_at);
 CREATE INDEX IF NOT EXISTS idx_reminders_remind_at ON reminders(remind_at);
 
+- -   M i g r a t i o n   f o r   S a a S   S u b s c r i p t i o n s  
+ - -   1 .   C r e a t e   s u b s c r i p t i o n _ r e q u e s t s   t a b l e   f o r   m a n u a l   U P I   p a y m e n t s  
+ C R E A T E   T A B L E   I F   N O T   E X I S T S   s u b s c r i p t i o n _ r e q u e s t s   (  
+     i d   U U I D   P R I M A R Y   K E Y   D E F A U L T   u u i d _ g e n e r a t e _ v 4 ( ) ,  
+     c o m p a n y _ i d   U U I D   N O T   N U L L   R E F E R E N C E S   c o m p a n i e s ( i d )   O N   D E L E T E   C A S C A D E ,  
+     u s e r _ i d   U U I D   N O T   N U L L   R E F E R E N C E S   a u t h . u s e r s ( i d )   O N   D E L E T E   C A S C A D E ,  
+     p l a n   T E X T   N O T   N U L L ,  
+     a m o u n t   N U M E R I C   N O T   N U L L ,  
+     p a y m e n t _ m e t h o d   T E X T   N O T   N U L L ,  
+     u t r _ n u m b e r   T E X T ,  
+     s c r e e n s h o t _ u r l   T E X T ,  
+     s t a t u s   T E X T   N O T   N U L L   D E F A U L T   ' p e n d i n g ' ,  
+     c r e a t e d _ a t   T I M E S T A M P T Z   D E F A U L T   N O W ( ) ,  
+     u p d a t e d _ a t   T I M E S T A M P T Z   D E F A U L T   N O W ( )  
+ ) ;  
+  
+ - -   E n a b l e   R L S  
+ A L T E R   T A B L E   s u b s c r i p t i o n _ r e q u e s t s   E N A B L E   R O W   L E V E L   S E C U R I T Y ;  
+  
+ - -   P o l i c i e s  
+ C R E A T E   P O L I C Y   " U s e r s   c a n   i n s e r t   t h e i r   o w n   r e q u e s t s "  
+     O N   s u b s c r i p t i o n _ r e q u e s t s   F O R   I N S E R T  
+     W I T H   C H E C K   ( a u t h . u i d ( )   =   u s e r _ i d ) ;  
+  
+ C R E A T E   P O L I C Y   " U s e r s   c a n   v i e w   t h e i r   o w n   r e q u e s t s "  
+     O N   s u b s c r i p t i o n _ r e q u e s t s   F O R   S E L E C T  
+     U S I N G   ( a u t h . u i d ( )   =   u s e r _ i d ) ;  
+  
+ C R E A T E   P O L I C Y   " S e r v i c e   r o l e   c a n   m a n a g e   a l l   r e q u e s t s "  
+     O N   s u b s c r i p t i o n _ r e q u e s t s   F O R   A L L  
+     U S I N G   ( t r u e )  
+     W I T H   C H E C K   ( t r u e ) ;  
+  
+ - -   2 .   A d d   p l a n   a n d   s u b s c r i p t i o n   d e t a i l s   t o   c o m p a n y _ s e t t i n g s   i f   n o t   e x i s t s  
+ A L T E R   T A B L E   c o m p a n y _ s e t t i n g s    
+ A D D   C O L U M N   I F   N O T   E X I S T S   p l a n   T E X T   D E F A U L T   ' f r e e ' ,  
+ A D D   C O L U M N   I F   N O T   E X I S T S   s u b s c r i p t i o n _ s t a t u s   T E X T   D E F A U L T   ' a c t i v e ' ,  
+ A D D   C O L U M N   I F   N O T   E X I S T S   s u b s c r i p t i o n _ e x p i r y   T I M E S T A M P T Z ,  
+ A D D   C O L U M N   I F   N O T   E X I S T S   r a z o r p a y _ c u s t o m e r _ i d   T E X T ;  
+  
+ - -   3 .   C r e a t e   S t o r a g e   b u c k e t   f o r   p a y m e n t   p r o o f s  
+ I N S E R T   I N T O   s t o r a g e . b u c k e t s   ( i d ,   n a m e ,   p u b l i c )    
+ V A L U E S   ( ' p a y m e n t _ p r o o f s ' ,   ' p a y m e n t _ p r o o f s ' ,   f a l s e )  
+ O N   C O N F L I C T   ( i d )   D O   N O T H I N G ;  
+  
+ - -   S t o r a g e   P o l i c i e s   f o r   p a y m e n t _ p r o o f s  
+ C R E A T E   P O L I C Y   " U s e r s   c a n   u p l o a d   t h e i r   o w n   p r o o f s "  
+     O N   s t o r a g e . o b j e c t s   F O R   I N S E R T  
+     W I T H   C H E C K   ( b u c k e t _ i d   =   ' p a y m e n t _ p r o o f s '   A N D   a u t h . u i d ( )   =   o w n e r ) ;  
+  
+ C R E A T E   P O L I C Y   " S e r v i c e   r o l e   c a n   m a n a g e   p r o o f s "  
+     O N   s t o r a g e . o b j e c t s   F O R   A L L  
+     U S I N G   ( b u c k e t _ i d   =   ' p a y m e n t _ p r o o f s ' )  
+     W I T H   C H E C K   ( b u c k e t _ i d   =   ' p a y m e n t _ p r o o f s ' ) ;  
+ 

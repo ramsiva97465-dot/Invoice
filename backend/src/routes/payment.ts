@@ -1,8 +1,14 @@
 import { Router, Request, Response } from 'express';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
 
 const router = Router();
+
+const supabase = createClient(
+  process.env.SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+);
 
 const getRazorpayInstance = () => {
   return new Razorpay({
@@ -42,7 +48,20 @@ router.post('/verify', async (req: Request, res: Response) => {
       .digest("hex");
       
     if (expectedSignature === razorpay_signature) {
-      // Logic to update user subscription status goes here (e.g., mark as 'pro')
+      // Payment is valid! Update the database.
+      const companyId = req.body.company_id; // Frontend needs to pass this
+      
+      if (companyId) {
+        await supabase
+          .from('company_settings')
+          .update({ 
+            plan: 'pro',
+            subscription_status: 'active',
+            razorpay_customer_id: razorpay_payment_id // Storing payment ID temporarily as reference
+          })
+          .eq('company_id', companyId);
+      }
+      
       res.json({ success: true, message: 'Payment verified successfully' });
     } else {
       res.status(400).json({ success: false, message: 'Invalid signature' });

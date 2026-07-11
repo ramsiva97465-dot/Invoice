@@ -22,7 +22,7 @@ export const paymentService = {
     return data;
   },
 
-  async verifyPayment(paymentData: { razorpay_order_id: string, razorpay_payment_id: string, razorpay_signature: string }) {
+  async verifyPayment(paymentData: { razorpay_order_id: string, razorpay_payment_id: string, razorpay_signature: string, company_id: string }) {
     const response = await fetch(`${API_URL}/payments/verify`, {
       method: 'POST',
       headers: {
