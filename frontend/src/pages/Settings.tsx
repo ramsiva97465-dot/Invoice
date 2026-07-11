@@ -20,6 +20,7 @@ export const Settings: React.FC<SettingsProps> = ({
   const [mobile, setMobile] = useState('');
   const [email, setEmail] = useState('');
   const [gst, setGst] = useState('');
+  const [state, setState] = useState('Tamil Nadu');
   const [bankName, setBankName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [ifscCode, setIfscCode] = useState('');
@@ -49,6 +50,7 @@ export const Settings: React.FC<SettingsProps> = ({
       setMobile(nextMobile);
       setEmail(nextEmail);
       setGst(nextGst);
+      setState(companySettings.state || 'Tamil Nadu');
       setBankName(nextBankName);
       setAccountNumber(nextAccountNumber);
       setIfscCode(nextIfscCode);
@@ -97,6 +99,7 @@ export const Settings: React.FC<SettingsProps> = ({
         mobile_number: mobile,
         email,
         gst_number: gst,
+        state,
         bank_name: bankName,
         account_number: accountNumber,
         ifsc_code: ifscCode,
@@ -157,6 +160,17 @@ export const Settings: React.FC<SettingsProps> = ({
                 onChange={(e) => setGst(e.target.value)}
                 placeholder="29AAAAA1111A1Z5"
                 className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:border-emerald-500 outline-none text-slate-800 dark:text-white font-sans"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1 font-sans">State *</label>
+              <input
+                type="text"
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                placeholder="e.g. Tamil Nadu"
+                className="w-full px-3 py-2 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent focus:border-emerald-500 outline-none text-slate-800 dark:text-white font-sans"
+                required
               />
             </div>
           </div>

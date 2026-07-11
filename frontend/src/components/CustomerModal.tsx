@@ -20,6 +20,8 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
   const [address, setAddress] = useState('');
   const [planName, setPlanName] = useState('');
   const [monthlyAmount, setMonthlyAmount] = useState('');
+  const [gstNumber, setGstNumber] = useState('');
+  const [state, setState] = useState('Tamil Nadu');
   const [status, setStatus] = useState<'Active' | 'Inactive'>('Active');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -32,6 +34,8 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
         setAddress(customer.address);
         setPlanName(customer.plan_name);
         setMonthlyAmount(customer.monthly_amount.toString());
+        setGstNumber(customer.gst_number || '');
+        setState(customer.state || 'Tamil Nadu');
         setStatus(customer.status);
       } else {
         setName('');
@@ -39,6 +43,8 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
         setAddress('');
         setPlanName('GigaFiber 100 Mbps');
         setMonthlyAmount('799');
+        setGstNumber('');
+        setState('Tamil Nadu');
         setStatus('Active');
       }
       setError('');
@@ -65,6 +71,8 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
         name,
         mobile_number: mobile,
         address,
+        gst_number: gstNumber,
+        state,
         plan_name: planName,
         monthly_amount: amt,
         status
@@ -152,6 +160,30 @@ export const CustomerModal: React.FC<CustomerModalProps> = ({
               placeholder="Full Address"
               required
             />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold uppercase text-slate-400 mb-1.5 font-sans">GSTIN (Optional)</label>
+              <input
+                type="text"
+                value={gstNumber}
+                onChange={(e) => setGstNumber(e.target.value.toUpperCase())}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-slate-800 dark:text-white font-sans"
+                placeholder="e.g. 33AAAAA0000A1Z5"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold uppercase text-slate-400 mb-1.5 font-sans">State *</label>
+              <input
+                type="text"
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-slate-800 dark:text-white font-sans"
+                placeholder="e.g. Tamil Nadu"
+                required
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

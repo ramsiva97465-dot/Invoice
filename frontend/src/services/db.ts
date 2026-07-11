@@ -364,6 +364,8 @@ export const dbService = {
           name,
           mobile_number,
           address,
+          gst_number,
+          state,
           plan_name
         )
       `)
@@ -378,12 +380,14 @@ export const dbService = {
 
     const { data, error } = await q.order('invoice_date', { ascending: false });
     if (error) throw error;
-    return ((data || []).map((inv: Record<string, unknown> & { gst_amount?: number; tax?: number; customers?: { name?: string; mobile_number?: string; address?: string; plan_name?: string } }) => ({
+    return ((data || []).map((inv: Record<string, unknown> & { gst_amount?: number; tax?: number; customers?: { name?: string; mobile_number?: string; address?: string; gst_number?: string; state?: string; plan_name?: string } }) => ({
       ...inv,
       tax: inv.gst_amount ?? inv.tax ?? 0,
       customer_name: inv.customers?.name,
       customer_mobile: inv.customers?.mobile_number,
       customer_address: inv.customers?.address,
+      customer_gst_number: inv.customers?.gst_number,
+      customer_state: inv.customers?.state,
       customer_plan: inv.customers?.plan_name,
     })) as unknown as import('./types').Invoice[]);
   },
@@ -403,6 +407,8 @@ export const dbService = {
           name,
           mobile_number,
           address,
+          gst_number,
+          state,
           plan_name
         )
       `)
@@ -434,6 +440,8 @@ export const dbService = {
       customer_name: invoice.customers?.name,
       customer_mobile: invoice.customers?.mobile_number,
       customer_address: invoice.customers?.address,
+      customer_gst_number: invoice.customers?.gst_number,
+      customer_state: invoice.customers?.state,
       customer_plan: invoice.customers?.plan_name,
       items: normalizedItems,
     };

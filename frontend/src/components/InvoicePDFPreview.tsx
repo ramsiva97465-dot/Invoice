@@ -380,6 +380,16 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
                   <p className="mt-1.5 text-xs text-slate-600">
                     <span className="font-medium text-slate-500">Mobile:</span> {invoice.customer_mobile}
                   </p>
+                  {invoice.customer_state && (
+                    <p className="mt-0.5 text-xs text-slate-600">
+                      <span className="font-medium text-slate-500">State:</span> {invoice.customer_state}
+                    </p>
+                  )}
+                  {invoice.customer_gst_number && (
+                    <p className="mt-0.5 text-xs text-slate-700 font-semibold">
+                      GSTIN: {invoice.customer_gst_number}
+                    </p>
+                  )}
                   {invoice.customer_plan && (
                     <p className="mt-0.5 text-xs text-slate-600">
                       <span className="font-medium text-slate-500">Plan:</span> {invoice.customer_plan}
@@ -418,7 +428,8 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
                 <table className="w-full text-sm mb-8">
                   <thead>
                     <tr className="border-b-2 border-slate-800">
-                      <th className="py-3 text-left text-[10px] uppercase tracking-[0.15em] text-slate-500 font-bold w-1/2">Description</th>
+                      <th className="py-3 text-left text-[10px] uppercase tracking-[0.15em] text-slate-500 font-bold w-[45%]">Description</th>
+                      <th className="py-3 text-left text-[10px] uppercase tracking-[0.15em] text-slate-500 font-bold">HSN/SAC</th>
                       <th className="py-3 text-center text-[10px] uppercase tracking-[0.15em] text-slate-500 font-bold">Qty</th>
                       <th className="py-3 text-right text-[10px] uppercase tracking-[0.15em] text-slate-500 font-bold">Rate</th>
                       <th className="py-3 text-right text-[10px] uppercase tracking-[0.15em] text-slate-500 font-bold">Amount</th>
@@ -428,6 +439,7 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
                     {invoice.items?.map((item, idx) => (
                       <tr key={item.id || idx} className="border-b border-slate-100">
                         <td className="py-4 font-medium text-slate-800">{item.description}</td>
+                        <td className="py-4 text-left text-slate-600 text-xs">{item.hsn_code || '-'}</td>
                         <td className="py-4 text-center text-slate-600">{item.quantity}</td>
                         <td className="py-4 text-right text-slate-600">₹{item.rate.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                         <td className="py-4 text-right font-semibold text-slate-900">₹{item.amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
@@ -444,10 +456,35 @@ export const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = ({
                       <span className="font-medium text-slate-900">₹{invoice.subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                     </div>
                     {(invoice.gst_amount ?? invoice.tax ?? 0) > 0 && (
-                      <div className="flex justify-between text-sm text-slate-600">
-                        <span>GST {invoice.gst_percentage ? `(${invoice.gst_percentage}%)` : ''}</span>
-                        <span className="font-medium text-slate-900">₹{(invoice.gst_amount ?? invoice.tax ?? 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                      </div>
+                      (() => {
+                        const taxAmt = invoice.gst_amount ?? invoice.tax ?? 0;
+                        const companyState = companySettings.state?.toLowerCase().trim() || 'tamil nadu';
+                        const customerState = invoice.customer_state?.toLowerCase().trim() || 'tamil nadu';
+                        
+                        if (companyState === customerState) {
+                          const half = taxAmt / 2;
+                          const halfPct = invoice.gst_percentage ? invoice.gst_percentage / 2 : '';
+                          return (
+                            <>
+                              <div className="flex justify-between text-sm text-slate-600">
+                                <span>CGST {halfPct ? `(${halfPct}%)` : ''}</span>
+                                <span className="font-medium text-slate-900">₹{half.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                              </div>
+                              <div className="flex justify-between text-sm text-slate-600">
+                                <span>SGST {halfPct ? `(${halfPct}%)` : ''}</span>
+                                <span className="font-medium text-slate-900">₹{half.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                              </div>
+                            </>
+                          );
+                        } else {
+                          return (
+                            <div className="flex justify-between text-sm text-slate-600">
+                              <span>IGST {invoice.gst_percentage ? `(${invoice.gst_percentage}%)` : ''}</span>
+                              <span className="font-medium text-slate-900">₹{taxAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            </div>
+                          );
+                        }
+                      })()
                     )}
                     <div className="flex justify-between items-center border-t-2 border-slate-800 pt-3 mt-3">
                       <span className="text-base font-bold text-slate-900 uppercase tracking-wide">Total</span>

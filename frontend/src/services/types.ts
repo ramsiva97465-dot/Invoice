@@ -13,7 +13,8 @@ export interface CompanySettings {
   upi_id: string;
   logo_url: string;
   signature_url?: string;
-  gst_percentage?: number | null; // Added to match fallback and schema
+  gst_percentage?: number | null;
+  state?: string;
 }
 
 export interface Customer {
@@ -22,6 +23,8 @@ export interface Customer {
   name: string;
   mobile_number: string;
   address: string;
+  gst_number?: string;
+  state?: string;
   plan_name: string;
   monthly_amount: number;
   status: 'Active' | 'Inactive';
@@ -32,6 +35,7 @@ export interface InvoiceItem {
   id?: string;
   invoice_id?: string;
   description: string;
+  hsn_code?: string;
   quantity: number;
   rate: number;
   amount: number;
@@ -57,6 +61,8 @@ export interface Invoice {
   customer_name?: string;
   customer_mobile?: string;
   customer_address?: string;
+  customer_gst_number?: string;
+  customer_state?: string;
   customer_plan?: string;
   items?: InvoiceItem[];
 }

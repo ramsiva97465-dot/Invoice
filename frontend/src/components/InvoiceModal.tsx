@@ -68,6 +68,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
       setItems([
         {
           description: `${customer.plan_name} - Rental Month`,
+          hsn_code: '998412', // Default telecom services SAC
           quantity: 1,
           rate: customer.monthly_amount,
           amount: customer.monthly_amount,
@@ -81,6 +82,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
       ...items,
       {
         description: '',
+        hsn_code: '',
         quantity: 1,
         rate: 0,
         amount: 0,
@@ -100,6 +102,8 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
       item.quantity = Math.max(1, parseInt(String(value)) || 1);
     } else if (field === 'rate') {
       item.rate = Math.max(0, parseFloat(String(value)) || 0);
+    } else if (field === 'hsn_code') {
+      item.hsn_code = String(value);
     } else {
       item.description = String(value);
     }
@@ -281,7 +285,8 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    <th className="px-4 py-2 w-3/5 font-sans">Description</th>
+                    <th className="px-4 py-2 w-2/5 font-sans">Description</th>
+                    <th className="px-2 py-2 w-24 font-sans">HSN/SAC</th>
                     <th className="px-3 py-2 w-16 text-center font-sans">Qty</th>
                     <th className="px-3 py-2 w-24 text-right font-sans">Rate (₹)</th>
                     <th className="px-3 py-2 w-24 text-right font-sans">Amount</th>
@@ -299,6 +304,15 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
                           placeholder="e.g. BroadBand Monthly Rental"
                           className="w-full px-2 py-1.5 bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 rounded-lg text-sm outline-none text-slate-850 dark:text-white font-sans transition-all"
                           required
+                        />
+                      </td>
+                      <td className="p-2">
+                        <input
+                          type="text"
+                          value={item.hsn_code || ''}
+                          onChange={(e) => handleItemFieldChange(index, 'hsn_code', e.target.value)}
+                          placeholder="Code"
+                          className="w-full px-2 py-1.5 bg-transparent border border-transparent hover:border-slate-200 dark:hover:border-slate-700 focus:border-emerald-500 focus:bg-white dark:focus:bg-slate-800 rounded-lg text-sm outline-none text-slate-850 dark:text-white font-sans transition-all"
                         />
                       </td>
                       <td className="p-2">

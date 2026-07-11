@@ -242,10 +242,219 @@ CREATE INDEX IF NOT EXISTS idx_reminders_remind_at ON reminders(remind_at);
  - -   S t o r a g e   P o l i c i e s   f o r   p a y m e n t _ p r o o f s  
  C R E A T E   P O L I C Y   " U s e r s   c a n   u p l o a d   t h e i r   o w n   p r o o f s "  
      O N   s t o r a g e . o b j e c t s   F O R   I N S E R T  
-     W I T H   C H E C K   ( b u c k e t _ i d   =   ' p a y m e n t _ p r o o f s '   A N D   a u t h . u i d ( )   =   o w n e r ) ;  
-  
- C R E A T E   P O L I C Y   " S e r v i c e   r o l e   c a n   m a n a g e   p r o o f s "  
-     O N   s t o r a g e . o b j e c t s   F O R   A L L  
-     U S I N G   ( b u c k e t _ i d   =   ' p a y m e n t _ p r o o f s ' )  
-     W I T H   C H E C K   ( b u c k e t _ i d   =   ' p a y m e n t _ p r o o f s ' ) ;  
- 
+    notes TEXT,
+    subtotal DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    -- Legacy `tax` retained for backward compatibility
+    tax DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    -- New GST fields
+    gst_percentage DECIMAL(5,2) DEFAULT NULL,
+    gst_amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    total_amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    payment_status VARCHAR(20) NOT NULL DEFAULT 'Pending' CHECK (payment_status IN ('Paid', 'Pending')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- Index for invoice queries
+CREATE INDEX IF NOT EXISTS idx_invoices_customer ON invoices(customer_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(payment_status);
+
+-- 4. INVOICE ITEMS TABLE (Line items for detailed breakdown)
+CREATE TABLE IF NOT EXISTS invoice_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    invoice_id UUID REFERENCES invoices(id) ON DELETE CASCADE NOT NULL,
+    description TEXT NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
+    rate DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- 5. MULTI-TENANCY (SaaS) - Tenant/Workspace + RLS
+
+-- Tenant/workspace table
+CREATE TABLE IF NOT EXISTS tenants (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- Memberships: maps users to tenants (roles can be expanded later)
+CREATE TABLE IF NOT EXISTS tenant_members (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL, -- supabase auth.users.id
+    role VARCHAR(30) NOT NULL DEFAULT 'admin',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+    UNIQUE (tenant_id, user_id)
+);
+
+-- Add tenant_id to tenant-owned tables
+ALTER TABLE company_settings ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE;
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE;
+ALTER TABLE invoice_items ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE;
+
+-- Backfill tenant_id for existing single-tenant setups:
+-- If there is exactly one tenant row and all tables are NULL, assign that tenant.
+DO $$
+DECLARE
+  v_tenant_id UUID;
+BEGIN
+  SELECT id INTO v_tenant_id FROM tenants LIMIT 1;
+  IF v_tenant_id IS NOT NULL THEN
+    UPDATE company_settings SET tenant_id = v_tenant_id WHERE tenant_id IS NULL;
+    UPDATE customers SET tenant_id = v_tenant_id WHERE tenant_id IS NULL;
+    UPDATE invoices SET tenant_id = v_tenant_id WHERE tenant_id IS NULL;
+    -- invoice_items tenant_id defaults to invoice tenant_id
+    UPDATE invoice_items ii
+    SET tenant_id = i.tenant_id
+    FROM invoices i
+    WHERE ii.tenant_id IS NULL AND ii.invoice_id = i.id;
+  END IF;
+END $$;
+
+-- Ensure invoice_items.tenant_id stays consistent with invoices
+CREATE OR REPLACE FUNCTION sync_invoice_items_tenant_id()
+RETURNS trigger AS $$
+BEGIN
+  NEW.tenant_id := (SELECT tenant_id FROM invoices WHERE id = NEW.invoice_id);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_sync_invoice_items_tenant ON invoice_items;
+CREATE TRIGGER trg_sync_invoice_items_tenant
+BEFORE INSERT OR UPDATE OF invoice_items
+FOR EACH ROW
+EXECUTE FUNCTION sync_invoice_items_tenant_id();
+
+-- Enable RLS
+ALTER TABLE tenants ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tenant_members ENABLE ROW LEVEL SECURITY;
+ALTER TABLE company_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE invoice_items ENABLE ROW LEVEL SECURITY;
+
+-- Single-company mode:
+-- Enable RLS but allow all authenticated admins to access shared tables without tenant/user scoping.
+
+-- RLS policies (single-company)
+
+-- company_settings: allow authenticated users to read/write the single shared row
+CREATE POLICY "company_settings: single-company all access" ON company_settings
+  FOR ALL TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
+-- customers: allow authenticated users to create/read/update/delete customers
+CREATE POLICY "customers: single-company all access" ON customers
+  FOR ALL TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
+-- invoices: allow authenticated users to create/read/update/delete invoices
+CREATE POLICY "invoices: single-company all access" ON invoices
+  FOR ALL TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
+-- invoice_items: allow authenticated users to create/read/update/delete invoice items
+CREATE POLICY "invoice_items: single-company all access" ON invoice_items
+  FOR ALL TO authenticated
+  USING (true)
+  WITH CHECK (true);
+
+
+-- 6. REMINDERS TABLE (in-app reminders for pending invoices)
+
+CREATE TABLE IF NOT EXISTS reminders (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  invoice_id UUID NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
+  customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+  remind_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  sent_at TIMESTAMP WITH TIME ZONE,
+  read_at TIMESTAMP WITH TIME ZONE,
+  message TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+ALTER TABLE reminders ENABLE ROW LEVEL SECURITY;
+
+-- For now: allow authenticated users; in real SaaS tenant isolation we will scope these policies.
+CREATE POLICY "Allow all access for authenticated users" ON reminders
+  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Useful indexes
+CREATE INDEX IF NOT EXISTS idx_reminders_read_at ON reminders(read_at);
+CREATE INDEX IF NOT EXISTS idx_reminders_remind_at ON reminders(remind_at);
+
+--   Migration for SaaS Subscriptions
+--   1. Create subscription_requests table for manual UPI payments
+CREATE TABLE IF NOT EXISTS subscription_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    plan TEXT NOT NULL,
+    amount NUMERIC NOT NULL,
+    payment_method TEXT NOT NULL,
+    utr_number TEXT,
+    screenshot_url TEXT,
+    status TEXT NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE subscription_requests ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+CREATE POLICY "Users can insert their own requests"
+    ON subscription_requests FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can view their own requests"
+    ON subscription_requests FOR SELECT
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Service role can manage all requests"
+    ON subscription_requests FOR ALL
+    USING (true)
+    WITH CHECK (true);
+
+-- 2. Add plan and subscription details to company_settings if not exists
+ALTER TABLE company_settings
+ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'free',
+ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'active',
+ADD COLUMN IF NOT EXISTS subscription_expiry TIMESTAMPTZ,
+ADD COLUMN IF NOT EXISTS razorpay_customer_id TEXT;
+
+-- 3. Create Storage bucket for payment proofs
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('payment_proofs', 'payment_proofs', false)
+ON CONFLICT (id) DO NOTHING;
+
+-- Storage Policies for payment_proofs
+CREATE POLICY "Users can upload their own proofs"
+    ON storage.objects FOR INSERT
+    WITH CHECK (bucket_id = 'payment_proofs' AND auth.uid() = owner);
+
+CREATE POLICY "Service role can manage proofs"
+    ON storage.objects FOR ALL
+    USING (bucket_id = 'payment_proofs')
+    WITH CHECK (bucket_id = 'payment_proofs');
+
+-- Add GST Compliance fields to the database
+
+-- 1. Add fields to customers table
+ALTER TABLE customers 
+ADD COLUMN IF NOT EXISTS gst_number TEXT,
+ADD COLUMN IF NOT EXISTS state TEXT;
+
+-- 2. Add fields to invoice_items table
+ALTER TABLE invoice_items 
+ADD COLUMN IF NOT EXISTS hsn_code TEXT;
+
+-- 3. Add fields to company_settings table
+ALTER TABLE company_settings
+ADD COLUMN IF NOT EXISTS state TEXT DEFAULT 'Tamil Nadu';
